@@ -1,18 +1,18 @@
 {
   "$schema": "https://schema.tauri.app/config/2.0.0",
-  "productName": "寸止",
+  "productName": "iterate",
   "version": "0.4.0",
   "identifier": "com.imhuso.cunzhi",
   "build": {
-    "beforeDevCommand": "pnpm dev",
-    "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "./dist",
     "devUrl": "http://localhost:5176"
   },
   "app": {
     "windows": [
       {
-        "title": "寸止",
+        "title": "iterate",
         "width": 600,
         "height": 800,
         "minWidth": 600,

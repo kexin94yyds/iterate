@@ -136,7 +136,7 @@ export function useShortcuts() {
   const quickSubmitShortcutText = computed(() => {
     const binding = getShortcutByAction('submit')
     if (!binding) {
-      return isMac.value ? '⌘+回车 快速发送' : 'Ctrl+回车 快速发送'
+      return isMac.value ? '⌘Enter 快速发送' : 'Ctrl+Enter 快速发送'
     }
     return `${shortcutKeyToString(binding.key_combination)} ${binding.name}`
   })

@@ -1,10 +1,10 @@
 // 应用程序相关常量
 
 /// 应用程序名称
-pub const NAME: &str = "寸止";
+pub const NAME: &str = "iterate";
 
 /// 应用程序英文名称
-pub const NAME_EN: &str = "cunzhi";
+pub const NAME_EN: &str = "iterate";
 
 /// 应用程序描述
 pub const DESCRIPTION: &str = "智能代码审查工具";
