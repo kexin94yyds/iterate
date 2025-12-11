@@ -621,7 +621,22 @@ defineExpose({
 
 <template>
   <div class="space-y-3">
-    <!-- 预定义选项 -->
+    <!-- 文本输入框 - 放在最上面，方便直接输入 -->
+    <div v-if="!loading" class="space-y-2">
+      <n-input
+        ref="textareaRef"
+        v-model:value="userInput"
+        type="textarea"
+        size="small"
+        :placeholder="hasOptions ? `您可以在这里添加补充说明... (支持粘贴图片 ${pasteShortcut})` : `请输入您的回复... (支持粘贴图片 ${pasteShortcut})`"
+        :disabled="submitting"
+        :autosize="{ minRows: 3, maxRows: 6 }"
+        data-guide="popup-input"
+        @paste="handleImagePaste"
+      />
+    </div>
+
+    <!-- 预定义选项 - 在输入框下面 -->
     <div v-if="!loading && hasOptions" class="space-y-3" data-guide="predefined-options">
       <h4 class="text-sm font-medium text-white">
         请选择选项
@@ -692,10 +707,10 @@ defineExpose({
       </n-image-group>
     </div>
 
-    <!-- 文本输入区域 -->
+    <!-- 补充说明区域 - 放在最后一排 -->
     <div v-if="!loading" class="space-y-3">
-      <h4 class="text-sm font-medium text-white">
-        {{ hasOptions ? '补充说明 (可选)' : '请输入您的回复' }}
+      <h4 v-if="hasOptions" class="text-sm font-medium text-white">
+        补充说明 (可选)
       </h4>
 
       <!-- 自定义prompt按钮区域 -->
@@ -766,19 +781,6 @@ defineExpose({
           💡 提示：可以在输入框中粘贴图片 ({{ pasteShortcut }})
         </div>
       </div>
-
-      <!-- 文本输入框 -->
-      <n-input
-        ref="textareaRef"
-        v-model:value="userInput"
-        type="textarea"
-        size="small"
-        :placeholder="hasOptions ? `您可以在这里添加补充说明... (支持粘贴图片 ${pasteShortcut})` : `请输入您的回复... (支持粘贴图片 ${pasteShortcut})`"
-        :disabled="submitting"
-        :autosize="{ minRows: 3, maxRows: 6 }"
-        data-guide="popup-input"
-        @paste="handleImagePaste"
-      />
     </div>
 
     <!-- 插入模式选择对话框 -->
