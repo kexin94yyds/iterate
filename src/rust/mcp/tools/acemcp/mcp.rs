@@ -386,12 +386,12 @@ fn collect_blobs(root: &str, text_exts: &[String], exclude_patterns: &[String], 
 }
 
 async fn index_and_search(config: &AcemcpConfig, project_root_path: &str, query: &str) -> anyhow::Result<String> {
-    let base_url = config.base_url.clone().ok_or_else(|| anyhow::anyhow!("未配置 base_url"))?;
+    let base_url = config.base_url.clone().ok_or_else(|| anyhow::anyhow!("未配置 acemcp API 端点 (base_url)，请在寸止设置 -> MCP工具 -> 搜 中配置 API 端点地址"))?;
     // 严格校验 base_url
     let has_scheme = base_url.starts_with("http://") || base_url.starts_with("https://");
     let has_host = base_url.trim().len() > "https://".len();
-    if !has_scheme || !has_host { anyhow::bail!("无效的 base_url，请填写完整的 http(s)://host[:port] 格式"); }
-    let token = config.token.clone().ok_or_else(|| anyhow::anyhow!("未配置 token"))?;
+    if !has_scheme || !has_host { anyhow::bail!("无效的 base_url: '{}'，请填写完整的 http(s)://host[:port] 格式", base_url); }
+    let token = config.token.clone().ok_or_else(|| anyhow::anyhow!("未配置 acemcp 认证令牌 (token)，请在寸止设置 -> MCP工具 -> 搜 中配置认证令牌"))?;
     let batch_size = config.batch_size.unwrap_or(10) as usize;
     let max_lines = config.max_lines_per_blob.unwrap_or(800) as usize;
     let text_exts = config.text_extensions.clone().unwrap_or_default();

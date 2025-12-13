@@ -78,3 +78,4 @@ scripts/
 *.exe
 *.md
 !ACEMCP.md
+!TROUBLESHOOTING.md

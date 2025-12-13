@@ -115,10 +115,18 @@ pub fn init_logger(config: LogConfig) -> Result<(), Box<dyn std::error::Error>> 
 /// 自动检测模式并初始化日志系统
 pub fn auto_init_logger() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
-    let is_mcp_mode = args.len() >= 3 && args[1] == "--mcp-request";
+    
+    // 检测 MCP 模式：
+    // 1. 通过 --mcp-request 参数（等一下 UI 处理 MCP 请求时）
+    // 2. 通过可执行文件名包含 "寸止"（MCP 服务器直接运行时）
+    let is_mcp_request_mode = args.len() >= 3 && args[1] == "--mcp-request";
+    let is_mcp_server = args.first()
+        .map(|arg| arg.contains("寸止"))
+        .unwrap_or(false);
+    let is_mcp_mode = is_mcp_request_mode || is_mcp_server;
     
     let config = if is_mcp_mode {
-        // MCP 模式：输出到文件
+        // MCP 模式：输出到文件，不能输出到 stderr（会破坏 JSON-RPC 通信）
         let log_file_path = env::var("MCP_LOG_FILE")
             .unwrap_or_else(|_| {
                 let temp_dir = env::temp_dir();

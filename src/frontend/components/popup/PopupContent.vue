@@ -139,7 +139,9 @@ md.renderer.rules.autolink_open = function (tokens, idx, options, env, renderer)
 // Markdown 渲染函数
 function renderMarkdown(content: string) {
   try {
-    return md.render(content)
+    // 将字面量 \n 转换为实际换行符（AI 有时会发送转义的换行符）
+    const normalizedContent = content.replace(/\\n/g, '\n')
+    return md.render(normalizedContent)
   }
   catch (error) {
     console.error('Markdown 渲染失败:', error)

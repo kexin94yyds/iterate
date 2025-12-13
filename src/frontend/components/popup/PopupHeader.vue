@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import ThemeIcon from '../common/ThemeIcon.vue'
 
 interface Props {
@@ -6,6 +7,7 @@ interface Props {
   loading?: boolean
   showMainLayout?: boolean
   alwaysOnTop?: boolean
+  projectPath?: string
 }
 
 interface Emits {
@@ -19,9 +21,19 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   showMainLayout: false,
   alwaysOnTop: false,
+  projectPath: undefined,
 })
 
 const emit = defineEmits<Emits>()
+
+// 计算显示的项目名称（取路径最后一部分）
+const displayProjectName = computed(() => {
+  if (!props.projectPath) {
+    return null
+  }
+  const parts = props.projectPath.replace(/\\/g, '/').split('/')
+  return parts[parts.length - 1] || parts[parts.length - 2] || props.projectPath
+})
 
 function handleThemeChange() {
   // 切换到下一个主题
@@ -41,12 +53,15 @@ function handleToggleAlwaysOnTop() {
 <template>
   <div class="px-4 py-3 select-none">
     <div class="flex items-center justify-between">
-      <!-- 左侧：标题 -->
-      <div class="flex items-center gap-3">
-        <div class="w-3 h-3 rounded-full bg-primary-500" />
-        <h1 class="text-base font-medium text-white">
+      <!-- 左侧：标题和项目路径 -->
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <span class="text-lg font-bold text-primary-500 flex-shrink-0">∞</span>
+        <h1 class="text-base font-medium text-white flex-shrink-0">
           iterate
         </h1>
+        <span v-if="displayProjectName" class="text-sm text-gray-400 truncate" :title="props.projectPath">
+          / {{ displayProjectName }}
+        </span>
       </div>
 
       <!-- 右侧：操作按钮 -->

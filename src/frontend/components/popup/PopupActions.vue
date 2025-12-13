@@ -105,7 +105,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="px-4 py-3 bg-gray-100 min-h-[60px] select-none">
+  <div class="px-4 py-3 bg-black-100 min-h-[60px] select-none">
     <div v-if="!loading" class="flex justify-between items-center">
       <!-- 左侧状态信息 -->
       <div class="flex items-center">

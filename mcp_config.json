@@ -1,2 +1,9 @@
-{"mcpServers": {"cunzhi": {"command": "/Users/apple/cunzhi/cunzhi/target/debug/寸止", "args": []}}}
-
+{
+  "mcpServers": {
+    "cunzhi": {
+      "args": [],
+      "command": "/Users/apple/.local/bin/寸止",
+      "disabled": false
+    }
+  }
+}
