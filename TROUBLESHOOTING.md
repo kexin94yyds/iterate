@@ -11,26 +11,38 @@
 - 控制台显示 `Failed to load resource: Could not connect to the server. http://localhost:5176/`
 
 ### 原因
-使用了 **debug 模式**编译的二进制。debug 模式下，前端资源不会嵌入到二进制中，而是连接到 vite 开发服务器（localhost:5176）。
+1. **debug 模式**：前端资源不会嵌入到二进制中，需要开发服务器运行
+2. **cargo build --release**：没有使用 Tauri 的构建流程，前端资源没有正确嵌入
 
 ### 解决方案
-使用 **release 模式**编译：
+
+**方案 A：使用 Tauri 构建（推荐）**
 
 ```bash
 npm run build
-cargo build --release
+npm run tauri build
 ```
 
-然后配置 Windsurf MCP 指向 release 版本：
-```json
+这会正确嵌入前端资源到二进制中。
+
+**方案 B：使用 debug 模式 + 开发服务器**
+
+```bash
+# 1. 启动开发服务器（保持运行）
+cd /Users/apple/cunzhi/cunzhi && npm run dev
+
+# 2. 配置 MCP 使用 debug 版本
+# ~/.codeium/windsurf/mcp_config.json:
 {
   "mcpServers": {
     "cunzhi": {
-      "command": "/Users/apple/cunzhi/cunzhi/target/release/寸止"
+      "command": "/Users/apple/cunzhi/cunzhi/target/debug/寸止"
     }
   }
 }
 ```
+
+**注意**：`cargo build --release` 不会正确嵌入前端资源，应使用 `npm run tauri build`
 
 ---
 
