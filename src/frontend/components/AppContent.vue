@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useMessage } from 'naive-ui'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { setupExitWarningListener } from '../composables/useExitWarning'
@@ -59,6 +61,17 @@ const { versionInfo, showUpdateModal } = useVersionCheck()
 // 弹窗中的设置显示控制
 const showPopupSettings = ref(false)
 
+// 窗口最小化功能
+async function minimizeWindow() {
+  try {
+    const window = getCurrentWindow()
+    await window.minimize()
+  }
+  catch (error) {
+    console.error('最小化窗口失败:', error)
+  }
+}
+
 // 初始化 Naive UI 消息实例
 const message = useMessage()
 
@@ -70,20 +83,44 @@ function togglePopupSettings() {
   showPopupSettings.value = !showPopupSettings.value
 }
 
-// 监听 MCP 请求变化，当有新请求时重置设置页面状态
-watch(() => props.mcpRequest, (newRequest) => {
+// 监听 MCP 请求变化，当有新请求时重置设置页面状态并更新窗口注册
+watch(() => props.mcpRequest, async (newRequest) => {
   if (newRequest && showPopupSettings.value) {
     // 有新的 MCP 请求时，自动切换回消息页面
     showPopupSettings.value = false
+  }
+
+  // 更新窗口注册（使用新的项目路径）
+  if (newRequest?.project_path) {
+    try {
+      await invoke('register_window_instance', { projectPath: newRequest.project_path })
+    }
+    catch (error) {
+      console.error('更新窗口注册失败:', error)
+    }
   }
 }, { immediate: true })
 
 // 全局键盘事件处理器
 function handleGlobalKeydown(event: KeyboardEvent) {
+  // Shift+Tab 切换置顶 - 仅在 MCP 弹窗显示时生效
+  if (event.key === 'Tab' && event.shiftKey && props.showMcpPopup) {
+    event.preventDefault()
+    emit('toggleAlwaysOnTop')
+    return
+  }
+
+  // Tab 键最小化当前弹窗 - 仅在 MCP 弹窗显示时生效
+  if (event.key === 'Tab' && props.showMcpPopup) {
+    event.preventDefault()
+    minimizeWindow()
+    return
+  }
+
   handleExitShortcut(event)
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 将消息实例传递给父组件
   emit('messageReady', message)
   // 设置退出警告监听器（统一处理主界面和弹窗）
@@ -91,11 +128,28 @@ onMounted(() => {
 
   // 添加全局键盘事件监听器
   document.addEventListener('keydown', handleGlobalKeydown)
+
+  // 注册当前窗口实例
+  try {
+    const projectPath = props.mcpRequest?.project_path || 'Unknown'
+    await invoke('register_window_instance', { projectPath })
+  }
+  catch (error) {
+    console.error('注册窗口实例失败:', error)
+  }
 })
 
-onUnmounted(() => {
+onUnmounted(async () => {
   // 移除键盘事件监听器
   document.removeEventListener('keydown', handleGlobalKeydown)
+
+  // 注销当前窗口实例
+  try {
+    await invoke('unregister_window_instance')
+  }
+  catch (error) {
+    console.error('注销窗口实例失败:', error)
+  }
 })
 </script>
 

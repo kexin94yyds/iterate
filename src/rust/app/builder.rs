@@ -95,6 +95,12 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
             update_shortcut_binding,
             reset_shortcuts_to_default,
 
+            // 窗口注册命令
+            register_window_instance,
+            unregister_window_instance,
+            get_all_window_instances,
+            activate_window_instance,
+
             // 配置管理命令
             get_config_file_path,
 

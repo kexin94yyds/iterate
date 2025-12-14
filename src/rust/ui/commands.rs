@@ -892,3 +892,32 @@ pub async fn reset_shortcuts_to_default(
 
     Ok(())
 }
+
+// 窗口注册相关命令
+
+/// 注册当前窗口实例
+#[tauri::command]
+pub async fn register_window_instance(project_path: String) -> Result<(), String> {
+    let mut registry = crate::ui::window_registry::WindowRegistry::load();
+    registry.register(&project_path)
+}
+
+/// 注销当前窗口实例
+#[tauri::command]
+pub async fn unregister_window_instance() -> Result<(), String> {
+    let mut registry = crate::ui::window_registry::WindowRegistry::load();
+    registry.unregister()
+}
+
+/// 获取所有窗口实例
+#[tauri::command]
+pub async fn get_all_window_instances() -> Result<Vec<crate::ui::window_registry::WindowInstance>, String> {
+    let mut registry = crate::ui::window_registry::WindowRegistry::load();
+    Ok(registry.get_all_instances())
+}
+
+/// 激活指定窗口
+#[tauri::command]
+pub async fn activate_window_instance(pid: u32) -> Result<(), String> {
+    crate::ui::window_registry::activate_window(pid)
+}
