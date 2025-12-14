@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { ref } from 'vue'
 
 /**
@@ -42,6 +43,17 @@ export function useMcpHandler() {
    * 显示MCP弹窗
    */
   async function showMcpDialog(request: any) {
+    // 设置窗口标题为项目路径
+    if (request?.project_path) {
+      try {
+        const window = getCurrentWindow()
+        await window.setTitle(`iterate - ${request.project_path}`)
+      }
+      catch (error) {
+        console.error('设置窗口标题失败:', error)
+      }
+    }
+
     // 获取Telegram配置，检查是否需要隐藏前端弹窗
     let shouldShowFrontendPopup = true
     try {

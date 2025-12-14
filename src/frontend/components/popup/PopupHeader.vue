@@ -26,13 +26,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
-// 计算显示的项目名称（取路径最后一部分）
-const displayProjectName = computed(() => {
-  if (!props.projectPath) {
-    return null
-  }
-  const parts = props.projectPath.replace(/\\/g, '/').split('/')
-  return parts[parts.length - 1] || parts[parts.length - 2] || props.projectPath
+// 显示完整的项目路径
+const displayProjectPath = computed(() => {
+  return props.projectPath || null
 })
 
 function handleThemeChange() {
@@ -59,8 +55,8 @@ function handleToggleAlwaysOnTop() {
         <h1 class="text-base font-medium text-white flex-shrink-0">
           iterate
         </h1>
-        <span v-if="displayProjectName" class="text-sm text-gray-400 truncate" :title="props.projectPath">
-          / {{ displayProjectName }}
+        <span v-if="displayProjectPath" class="text-sm text-gray-400 truncate" :title="displayProjectPath">
+          / {{ displayProjectPath }}
         </span>
       </div>
 

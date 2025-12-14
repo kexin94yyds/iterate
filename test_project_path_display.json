@@ -1,0 +1,12 @@
+{
+  "id": "regression-cunzhi-003",
+  "message": "# 回归检查 CUNZHI-003\n\n验证标题栏是否显示完整项目路径。\n\n## 检查项\n1. GUI 标题栏应显示 `/Users/apple/cunzhi`（完整路径）\n2. Dock 栏悬停应显示 `iterate - /Users/apple/cunzhi`\n\n请确认以上两项是否正确显示。",
+  "predefined_options": [
+    "✅ 标题栏和 Dock 都正确显示完整路径",
+    "❌ 标题栏显示不正确",
+    "❌ Dock 悬停显示不正确",
+    "❌ 两者都不正确"
+  ],
+  "is_markdown": true,
+  "project_path": "/Users/apple/cunzhi"
+}
