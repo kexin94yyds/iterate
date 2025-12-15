@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/core'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { register, unregister } from '@tauri-apps/plugin-global-shortcut'
 import { useMessage } from 'naive-ui'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { setupExitWarningListener } from '../composables/useExitWarning'
@@ -72,6 +73,21 @@ async function minimizeWindow() {
   }
 }
 
+// 窗口恢复功能
+async function restoreWindow() {
+  try {
+    const window = getCurrentWindow()
+    await window.unminimize()
+    await window.setFocus()
+  }
+  catch (error) {
+    console.error('恢复窗口失败:', error)
+  }
+}
+
+// 用于检测单独按下 Shift 键（不与其他键组合）
+let shiftKeyAlone = false
+
 // 初始化 Naive UI 消息实例
 const message = useMessage()
 
@@ -103,10 +119,18 @@ watch(() => props.mcpRequest, async (newRequest) => {
 
 // 全局键盘事件处理器
 function handleGlobalKeydown(event: KeyboardEvent) {
-  // Shift+Tab 切换置顶 - 仅在 MCP 弹窗显示时生效
+  // 检测是否单独按下 Shift 键
+  if (event.key === 'Shift') {
+    shiftKeyAlone = true
+    return
+  }
+  // 如果按下其他键，说明 Shift 不是单独按下的
+  shiftKeyAlone = false
+
+  // Shift+Tab 恢复窗口 - 仅在 MCP 弹窗显示时生效
   if (event.key === 'Tab' && event.shiftKey && props.showMcpPopup) {
     event.preventDefault()
-    emit('toggleAlwaysOnTop')
+    restoreWindow()
     return
   }
 
@@ -120,6 +144,15 @@ function handleGlobalKeydown(event: KeyboardEvent) {
   handleExitShortcut(event)
 }
 
+// Shift 键释放处理器 - 单独按 Shift 切换置顶
+function handleGlobalKeyup(event: KeyboardEvent) {
+  if (event.key === 'Shift' && shiftKeyAlone && props.showMcpPopup) {
+    event.preventDefault()
+    emit('toggleAlwaysOnTop')
+  }
+  shiftKeyAlone = false
+}
+
 onMounted(async () => {
   // 将消息实例传递给父组件
   emit('messageReady', message)
@@ -128,6 +161,17 @@ onMounted(async () => {
 
   // 添加全局键盘事件监听器
   document.addEventListener('keydown', handleGlobalKeydown)
+  document.addEventListener('keyup', handleGlobalKeyup)
+
+  // 注册全局快捷键用于恢复窗口（即使窗口最小化也能监听）
+  try {
+    await register('Shift+Tab', async () => {
+      await restoreWindow()
+    })
+  }
+  catch (error) {
+    console.error('注册全局快捷键失败:', error)
+  }
 
   // 注册当前窗口实例
   try {
@@ -142,6 +186,15 @@ onMounted(async () => {
 onUnmounted(async () => {
   // 移除键盘事件监听器
   document.removeEventListener('keydown', handleGlobalKeydown)
+  document.removeEventListener('keyup', handleGlobalKeyup)
+
+  // 注销全局快捷键
+  try {
+    await unregister('Shift+Tab')
+  }
+  catch (error) {
+    console.error('注销全局快捷键失败:', error)
+  }
 
   // 注销当前窗口实例
   try {
