@@ -143,7 +143,7 @@ impl MemoryManager {
         let categories = [
             MemoryCategory::Rule,
             MemoryCategory::Preference,
-            MemoryCategory::Pattern,
+            MemoryCategory::Note,
             MemoryCategory::Context,
         ];
 
@@ -151,7 +151,7 @@ impl MemoryManager {
             let filename = match category {
                 MemoryCategory::Rule => "rules.md",
                 MemoryCategory::Preference => "preferences.md",
-                MemoryCategory::Pattern => "patterns.md",
+                MemoryCategory::Note => "notes.md",
                 MemoryCategory::Context => "context.md",
             };
 
@@ -197,7 +197,7 @@ impl MemoryManager {
         let categories = [
             (MemoryCategory::Rule, "rules.md"),
             (MemoryCategory::Preference, "preferences.md"),
-            (MemoryCategory::Pattern, "patterns.md"),
+            (MemoryCategory::Note, "notes.md"),
             (MemoryCategory::Context, "context.md"),
         ];
 
@@ -221,7 +221,7 @@ impl MemoryManager {
         let filename = match category {
             MemoryCategory::Rule => "rules.md",
             MemoryCategory::Preference => "preferences.md",
-            MemoryCategory::Pattern => "patterns.md",
+            MemoryCategory::Note => "notes.md",
             MemoryCategory::Context => "context.md",
         };
 
@@ -239,7 +239,7 @@ impl MemoryManager {
         let filename = match entry.category {
             MemoryCategory::Rule => "rules.md",
             MemoryCategory::Preference => "preferences.md",
-            MemoryCategory::Pattern => "patterns.md",
+            MemoryCategory::Note => "notes.md",
             MemoryCategory::Context => "context.md",
         };
 
@@ -288,7 +288,7 @@ impl MemoryManager {
         match category {
             MemoryCategory::Rule => "开发规范和规则",
             MemoryCategory::Preference => "用户偏好设置",
-            MemoryCategory::Pattern => "常用模式和最佳实践",
+            MemoryCategory::Note => "临时笔记",
             MemoryCategory::Context => "项目上下文信息",
         }
     }
@@ -314,6 +314,109 @@ impl MemoryManager {
         Ok(())
     }
 
+    /// 获取知识库目录路径
+    pub fn get_knowledge_dir(&self) -> Result<PathBuf> {
+        let project_root = self.memory_dir.parent()
+            .ok_or_else(|| anyhow::anyhow!("无法获取项目根目录"))?;
+        
+        let knowledge_dir = project_root.join(".cunzhi-knowledge");
+        
+        if !knowledge_dir.exists() {
+            return Err(anyhow::anyhow!("项目未接入全局知识库，请先初始化 .cunzhi-knowledge/"));
+        }
+        
+        Ok(knowledge_dir)
+    }
+
+    /// 写入全局知识库（沉淀）
+    pub fn settle_to_knowledge(&self, content: &str, category: &str) -> Result<String> {
+        let knowledge_dir = self.get_knowledge_dir()?;
+        
+        let filename = match category {
+            "patterns" => "patterns.md",
+            "problems" => "problems.md",
+            _ => return Err(anyhow::anyhow!("不支持的知识库分类: {}，仅支持 patterns/problems", category)),
+        };
+        
+        let file_path = knowledge_dir.join(filename);
+        
+        // 读取现有内容
+        let mut file_content = if file_path.exists() {
+            fs::read_to_string(&file_path)?
+        } else {
+            String::new()
+        };
+        
+        // 追加新内容
+        file_content.push_str("\n");
+        file_content.push_str(content);
+        file_content.push_str("\n");
+        
+        // 写入文件
+        fs::write(&file_path, file_content)?;
+        
+        Ok(format!("✅ 已沉淀到 .cunzhi-knowledge/{}\n📝 内容: {}\n⚠️ 请记得 git push 同步到远程", filename, content))
+    }
+
+    /// 读取全局知识库内容
+    pub fn read_knowledge(&self) -> Result<String> {
+        // 从 memory_dir 的父目录查找 .cunzhi-knowledge
+        let project_root = self.memory_dir.parent()
+            .ok_or_else(|| anyhow::anyhow!("无法获取项目根目录"))?;
+        
+        let knowledge_dir = project_root.join(".cunzhi-knowledge");
+        
+        if !knowledge_dir.exists() {
+            return Ok("📭 项目未接入全局知识库".to_string());
+        }
+        
+        let mut knowledge_parts = Vec::new();
+        
+        // 读取 patterns.md 摘要
+        let patterns_path = knowledge_dir.join("patterns.md");
+        if patterns_path.exists() {
+            if let Ok(content) = fs::read_to_string(&patterns_path) {
+                // 提取 Expertise Sections 索引表
+                if let Some(start) = content.find("## Expertise Sections") {
+                    if let Some(end) = content.find("## 详细记录") {
+                        let summary = &content[start..end];
+                        let lines: Vec<&str> = summary.lines()
+                            .filter(|l| l.starts_with("| PAT-"))
+                            .take(5)  // 只取前5条
+                            .collect();
+                        if !lines.is_empty() {
+                            knowledge_parts.push(format!("**最佳实践**: {}", lines.join("; ")));
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 读取 problems.md 摘要（只读最近的问题）
+        let problems_path = knowledge_dir.join("problems.md");
+        if problems_path.exists() {
+            if let Ok(content) = fs::read_to_string(&problems_path) {
+                // 统计问题数量
+                let open_count = content.matches("状态: open").count();
+                let fixed_count = content.matches("状态: fixed").count();
+                let verified_count = content.matches("状态: verified").count();
+                
+                if open_count + fixed_count + verified_count > 0 {
+                    knowledge_parts.push(format!(
+                        "**问题记录**: {} open, {} fixed, {} verified",
+                        open_count, fixed_count, verified_count
+                    ));
+                }
+            }
+        }
+        
+        if knowledge_parts.is_empty() {
+            Ok("📖 全局知识库已接入（暂无摘要）".to_string())
+        } else {
+            Ok(format!("📖 全局知识: {}", knowledge_parts.join(" | ")))
+        }
+    }
+
     /// 获取项目信息供MCP调用方分析 - 压缩简化版本
     pub fn get_project_info(&self) -> Result<String> {
         // 汇总所有记忆规则并压缩
@@ -328,7 +431,7 @@ impl MemoryManager {
         let categories = [
             (MemoryCategory::Rule, "规范"),
             (MemoryCategory::Preference, "偏好"),
-            (MemoryCategory::Pattern, "模式"),
+            (MemoryCategory::Note, "笔记"),
             (MemoryCategory::Context, "背景"),
         ];
 

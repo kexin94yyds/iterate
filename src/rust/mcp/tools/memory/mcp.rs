@@ -35,7 +35,7 @@ impl MemoryTool {
                 let category = match request.category.as_str() {
                     "rule" => MemoryCategory::Rule,
                     "preference" => MemoryCategory::Preference,
-                    "pattern" => MemoryCategory::Pattern,
+                    "note" => MemoryCategory::Note,
                     "context" => MemoryCategory::Context,
                     _ => MemoryCategory::Context,
                 };
@@ -46,8 +46,29 @@ impl MemoryTool {
                 format!("✅ 记忆已添加，ID: {}\n📝 内容: {}\n📂 分类: {:?}", id, request.content, category)
             }
             "回忆" => {
-                manager.get_project_info()
-                    .map_err(|e| McpError::internal_error(format!("获取项目信息失败: {}", e), None))?
+                let memory_info = manager.get_project_info()
+                    .map_err(|e| McpError::internal_error(format!("获取项目记忆失败: {}", e), None))?;
+                let knowledge_info = manager.read_knowledge()
+                    .map_err(|e| McpError::internal_error(format!("获取知识库失败: {}", e), None))?;
+                
+                format!("{}\n{}", memory_info, knowledge_info)
+            }
+            "沉淀" => {
+                if request.content.trim().is_empty() {
+                    return Err(McpError::invalid_params("缺少沉淀内容".to_string(), None));
+                }
+                
+                // 验证 category 是否为 knowledge 专用类型
+                let category = match request.category.as_str() {
+                    "patterns" | "problems" => request.category.as_str(),
+                    _ => return Err(McpError::invalid_params(
+                        format!("沉淀仅支持 patterns/problems 分类，收到: {}", request.category),
+                        None
+                    )),
+                };
+                
+                manager.settle_to_knowledge(&request.content, category)
+                    .map_err(|e| McpError::internal_error(format!("沉淀失败: {}", e), None))?
             }
             _ => {
                 return Err(McpError::invalid_params(

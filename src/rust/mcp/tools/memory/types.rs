@@ -16,7 +16,7 @@ pub struct MemoryEntry {
 pub enum MemoryCategory {
     Rule,        // 开发规范和规则
     Preference,  // 用户偏好设置
-    Pattern,     // 常用模式和最佳实践
+    Note,        // 临时笔记（原 Pattern，避免与 knowledge 的 patterns.md 混淆）
     Context,     // 项目上下文信息
 }
 

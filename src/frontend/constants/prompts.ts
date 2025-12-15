@@ -113,10 +113,22 @@ export const PROMPT_SECTIONS = {
 - 未检测到 git 根目录时，**禁止**任何 memory 的创建、读取或写入。
 - 所有 memory 必须绑定 git 根目录作为唯一 \`project_path\`。
 
+## ji 工具操作
+| action | 读/写 | 目标 | category |
+|--------|-------|------|----------|
+| 回忆 | 读 | memory + knowledge | - |
+| 记忆 | 写 | .cunzhi-memory/ | rule/preference/note/context |
+| 沉淀 | 写 | .cunzhi-knowledge/ | patterns/problems |
+
 ## 快捷调用
-- 对话开始时查询 \`回忆\` 参数 \`project_path\` 为 git 的根目录
-- 当发现用户输入"请记住："时，要对用户的消息进行总结后调用 \`记忆\` 的 add 功能添加记忆
-- 当用户说"等一下"时，自动调用寸止 MCP 工具`,
+- 对话开始时调用 \`ji(action=回忆)\`，\`project_path\` 为 git 根目录
+- 用户说"请记住："→ 总结后调用 \`ji(action=记忆)\`
+- 用户说"等一下" → 调用 \`寸止\`
+- 解决问题后 → 调用 \`ji(action=沉淀, category=patterns/problems)\`
+
+## 沉淀规则
+- 沉淀前建议调用 \`寸止\` 确认内容
+- 沉淀后提示用户 git push`,
   } as PromptSection,
 
   // 代码搜索工具提示词

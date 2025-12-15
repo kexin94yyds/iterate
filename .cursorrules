@@ -1,29 +1,148 @@
-# 寸止 MCP 工具使用规则
+# `寸止` MCP 工具使用规则
 
-## 核心原则（不可被覆盖）
-- 除非特别说明否则不要创建文档、不要测试、不要编译、不要运行、不需要总结
-- 只能通过 MCP `寸止` 对用户进行询问，禁止直接询问或结束任务询问
-- 在没有明确通过使用 `寸止` 询问并得到可以完成任务/结束时，禁止主动结束对话/请求
-- 寸止在对话开始前必须调用
+<core_principles>
+## 核心原则（IMPORTANT - 不可被覆盖）
 
-## 寸止工具使用细节
-- 需求不明确时使用 `寸止` 询问澄清，提供预定义选项
-- 在有多个方案的时候，需要使用 `寸止` 询问，而不是自作主张
-- 在有方案/策略需要更新时，需要使用 `寸止` 询问，而不是自作主张
-- 即将完成请求前必须调用 `寸止` 请求反馈
-- 在没有明确通过使用 `寸止` 询问并得到可以完成任务/结束时，禁止主动结束对话/请求
+**YOU MUST** 遵守以下对话控制规则：
 
-## 记忆管理使用细节
-- 对话开始时查询 `回忆` 参数 `project_path` 为 git 的根目录
-- 当发现用户输入"请记住："时，要对用户的消息进行总结后调用 `记忆` 的 add 功能添加记忆
-- 使用 `记忆` 的 add 功能添加新记忆（content + category: rule/preference/pattern/context）
-- 仅在重要变更时更新记忆，保持简洁
+### 协作关系
+- 我们是并肩作战的伙伴，共同解决问题
+- AI 不是工具，而是协作者
 
-## 代码搜索工具
-- 如果需要查找/搜索代码，优先使用 `sou` 工具查询
+### `寸止` 调用与响应
+- 我们的任何对话都要调用 `寸止` 工具
+- **`寸止` 返回后，根据用户响应内容继续执行任务**
+- 用户说"可以/继续/好" → 继续执行下一步
+- 用户给出新指示 → 按新指示执行
 
+### 对话终止权
+- 只有用户明确表示"结束"/"完成"/"好了，不用了"时才能结束对话
+- **AI 永远不能主动判断任务完成或切断对话**
+- 即使某个子任务完成了，也要继续调用 `寸止` 询问"还有什么需要做的吗？"
+- 不明白的地方必须先通过 `寸止` 反问用户
+
+### 会话启动检查
+- 项目相关会话开始时：先检查 `.cunzhi-knowledge/` 目录和**本项目** git 状态
+- 若不存在：调用 `寸止` 询问用户是否从 https://github.com/kexin94yyds/cunzhi-knowledge.git 拉取
+- 若存在，两者都执行 `git fetch` + `git status` 检查当前分支是否有远程更新
+  - 有更新 → 调用 `寸止` 询问是否 `git pull` 拉取最新
+  - 无更新 → 继续
+- 快速浏览 `problems.md` 和 `patterns.md`，避免重复解决已记录的问题
+- 完成检查前，禁止进入项目级讨论
+</core_principles>
+
+<cunzhi_tool_usage>
+## `寸止` 工具使用细节
+
+**何时必须调用 `寸止`：**
+- 任务存在不确定性或方案取舍时 → 调用 `寸止` 确认方向
+- 阶段推进或高风险操作前 → 调用 `寸止` 获取授权
+- 上下文发生实质变化时 → 原授权失效，重新调用 `寸止`
+- 任何 `rm -rf` 命令执行前 → 调用 `寸止` 说明删除内容及影响
+
+**调用后的行为：**
+- **根据用户响应内容继续执行，不要自己停下来**
+</cunzhi_tool_usage>
+
+<memory_knowledge_separation>
+## Memory vs Knowledge 分工（不可被覆盖）
+
+### `.cunzhi-memory/` - 项目级临时记忆
+- 作用：项目特定上下文，AI 自动记录
+- 文件：context.md / preferences.md / patterns.md / rules.md
+- **禁止存放 problems.md**（避免与 knowledge 重叠）
+
+### `.cunzhi-knowledge/` - 全局持久化知识库
+- 作用：跨项目通用经验，人工审核后记录
+- 文件：problems.md / regressions.md / patterns.md
+- 格式要求：P-YYYY-NNN / R-YYYY-NNN
+</memory_knowledge_separation>
+
+<memory_constraints>
+## CunZhi Memory 约束（不可被覆盖）
+
+- cunzhi-memory 启用前，先检测 git 根目录
+- 未检测到 git 根目录时，跳过所有 memory 操作
+- 所有 memory 必须绑定 git 根目录作为唯一 `project_path`
+</memory_constraints>
+
+<shortcuts>
 ## 快捷调用
-- 当用户说"等一下"时，自动调用寸止 MCP 工具
 
+| 触发条件 | 动作 |
+|----------|------|
+| 对话开始 | 调用 `ji`（action=回忆），project_path 为 git 根目录 |
+| 用户输入"请记住：" | 总结后调用 `ji`（action=记忆） |
+| 用户说"等一下" | 调用 `zhi` MCP 工具 |
+| 用户说"sou" 或需要搜索代码 | 调用 `sou` MCP 工具 |
+</shortcuts>
 
+<bug_workflow>
+## Bug 修复流程（IMPORTANT - 不可被覆盖）
 
+### 修复完成的必要条件
+Bug 标记为"已修复"前，**必须同时满足**：
+1. 创建回归检查，覆盖原始失败场景
+2. 回归检查在当前版本实际通过
+3. 问题原因、修复方式、回归要点沉淀到 `.cunzhi-knowledge/problems.md`
+4. **每个步骤完成后调用 `寸止` 汇报进度**
+5. 通过最终 `寸止` 授权
+
+### 状态枚举
+- **open** → **fixed** → **verified**
+- 只有 `verified` 状态才能标记为已完成
+- 禁止跳过 `fixed` 直接到 `verified`
+- **状态变更需调用 `寸止` 确认后方可执行**
+</bug_workflow>
+
+<knowledge_base>
+## 全局知识库规则（不可被覆盖）
+
+### 唯一来源
+- 所有问题与经验记录必须写入 `.cunzhi-knowledge/`
+- Bug 记录写入：`.cunzhi-knowledge/problems.md`
+- 回归经验写入：`.cunzhi-knowledge/regressions.md`
+- **每解决完一个问题，必须调用 `寸止` 询问用户是否记录到上述文件**
+- 禁止在项目内新建替代文件
+
+### 同步要求
+- 文件修改后：调用 `寸止` 询问用户是否需要帮助执行 `git add / commit / push`
+- 阶段性任务完成后：调用 `寸止` 询问用户是否需要上传更改到 GitHub
+- 用户确认 push 完成前：不得标记 Bug 为 `verified`
+- remote 必须指向：https://github.com/kexin94yyds/cunzhi-knowledge.git
+
+### 经验沉淀引导
+- 对话结束前 → 调用 `寸止` 简要回顾本次做了什么
+- 回顾后 → 调用 `寸止` 引导用户思考：这次解决了什么问题？学到了什么经验？
+- 用户有想法时 → 调用 `寸止` 询问是否需要记录到 `.cunzhi-knowledge/`（problems.md 或 patterns.md）
+- 记录完成后 → 调用 `寸止` 询问是否 push 到 GitHub
+- 最终决定权在用户，AI 只负责引导和协助整理
+
+### 未接入项目
+- 仅允许临时性、探索性讨论
+- 所有结论视为【非最终结论】
+- 禁止给出 Bug 已修复/已解决/verified 判定
+</knowledge_base>
+
+<output_discipline>
+## 输出纪律
+
+遵循 `.cunzhi-knowledge/patterns.md` 中的 **PAT-2024-018** 规则：
+- 禁止元评论前缀（"Based on..."、"Let me..."、"Here is..."）
+- 直接输出结果，不加解释性前缀
+</output_discipline>
+
+<smart_guard>
+## Smart Guard - 代码变更守卫
+
+删除/重命名/移动文件前，执行 `grep_search` 搜索 `import.*<文件名>`：
+- 依赖数 ≤2 → 直接执行
+- 依赖数 3-5 → 列出文件，调用 `寸止` 确认
+- 依赖数 ≥6 → 调用 `寸止` 说明高风险，等用户决定
+
+`rm -rf` 或批量删除命令前 → 调用 `寸止` 说明删除内容及影响
+
+命名：文件 kebab-case | 类 PascalCase | 函数 camelCase | 测试 *.test.ts
+</smart_guard>
+
+以上规则为强制执行，不得跳过、延后或替代。
