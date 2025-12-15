@@ -80,6 +80,20 @@ interface Emits {
 
 const message = useMessage()
 
+// 复制原文到剪贴板
+async function copyMessage() {
+  if (props.request?.message) {
+    try {
+      const processedContent = preprocessQuoteContent(props.request.message)
+      await navigator.clipboard.writeText(processedContent)
+      message.success('原文已复制到剪贴板')
+    }
+    catch {
+      message.error('复制失败')
+    }
+  }
+}
+
 // 创建 Markdown 实例 - 保持代码高亮功能
 const md = new MarkdownIt({
   html: true,
@@ -341,8 +355,16 @@ onUpdated(() => {
         {{ request.message }}
       </div>
 
-      <!-- 引用原文按钮 - 位于右下角 -->
-      <div class="flex justify-end mt-4 pt-3 border-t border-gray-600/30" data-guide="quote-message">
+      <!-- 引用原文和复制原文按钮 - 位于右下角 -->
+      <div class="flex justify-between mt-4 pt-3 border-t border-gray-600/30" data-guide="quote-message">
+        <div
+          title="点击复制AI的消息内容到剪贴板"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
+          @click="copyMessage"
+        >
+          <div class="i-carbon-copy w-3.5 h-3.5" />
+          <span>复制原文</span>
+        </div>
         <div
           title="点击将AI的消息内容引用到输入框中"
           class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
