@@ -29,6 +29,11 @@
   - 无更新 → 继续
 - 快速浏览 `problems.md` 和 `patterns.md`，避免重复解决已记录的问题
 - 完成检查前，禁止进入项目级讨论
+
+### 任务分配权
+- **任务量大时（>20 条重复操作或预估 >5000 行输出）**，主动调用 `寸止` 询问是否分配给子代理
+- 用户确认分配 → 读取 `prompts/workflows/batch-task.md` 执行
+- 用户拒绝分配 → 直接执行任务
 </core_principles>
 
 <cunzhi_tool_usage>
