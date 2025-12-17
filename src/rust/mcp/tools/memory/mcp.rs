@@ -67,6 +67,17 @@ impl MemoryTool {
                     )),
                 };
                 
+                // 验证 problems 格式必须包含 P-YYYY-NNN
+                if category == "problems" {
+                    let pattern = regex::Regex::new(r"P-\d{4}-\d{3}").unwrap();
+                    if !pattern.is_match(&request.content) {
+                        return Err(McpError::invalid_params(
+                            "沉淀 problems 必须包含 P-YYYY-NNN 格式的编号（如 P-2024-001）".to_string(),
+                            None
+                        ));
+                    }
+                }
+                
                 manager.settle_to_knowledge(&request.content, category)
                     .map_err(|e| McpError::internal_error(format!("沉淀失败: {}", e), None))?
             }

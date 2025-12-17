@@ -203,7 +203,6 @@ onUnmounted(async () => {
   // 注销全局快捷键
   try {
     await unregister('Shift+Tab')
-    await unregister('CommandOrControl+Shift+T')
   }
   catch (error) {
     console.error('注销全局快捷键失败:', error)
