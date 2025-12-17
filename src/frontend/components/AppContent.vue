@@ -185,16 +185,6 @@ onMounted(async () => {
     console.error('注册全局快捷键失败:', error)
   }
 
-  // 注册 Cmd+Shift+T 打开新聊天标签页
-  try {
-    await register('CommandOrControl+Shift+T', async () => {
-      await handleNewChat()
-    })
-  }
-  catch (error) {
-    console.error('注册 Cmd+Shift+T 快捷键失败:', error)
-  }
-
   // 注册当前窗口实例
   try {
     const projectPath = props.mcpRequest?.project_path || 'Unknown'
