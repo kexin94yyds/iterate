@@ -22,7 +22,7 @@ fn default_is_markdown() -> bool {
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct JiyiRequest {
-    #[schemars(description = "操作类型：记忆(添加记忆), 回忆(获取项目信息)")]
+    #[schemars(description = "操作类型：记忆(添加记忆), 回忆(获取项目信息), 沉淀(写入knowledge), 摘要(添加会话摘要)")]
     pub action: String,
     #[schemars(description = "项目路径（必需）")]
     pub project_path: String,

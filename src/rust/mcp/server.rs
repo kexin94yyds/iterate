@@ -127,7 +127,7 @@ impl ServerHandler for ZhiServer {
                 "properties": {
                     "action": {
                         "type": "string",
-                        "description": "操作类型：记忆(添加记忆), 回忆(获取项目信息)"
+                        "description": "操作类型：记忆(添加记忆), 回忆(获取项目信息), 沉淀(写入knowledge), 摘要(添加会话摘要)"
                     },
                     "project_path": {
                         "type": "string",

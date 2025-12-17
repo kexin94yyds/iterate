@@ -119,12 +119,14 @@ export const PROMPT_SECTIONS = {
 | 回忆 | 读 | memory + knowledge | - |
 | 记忆 | 写 | .cunzhi-memory/ | rule/preference/note/context |
 | 沉淀 | 写 | .cunzhi-knowledge/ | patterns/problems |
+| 摘要 | 写 | .cunzhi-memory/ | session（L3 会话摘要，自动保留15条） |
 
 ## 快捷调用
 - 对话开始时调用 \`ji(action=回忆)\`，\`project_path\` 为 git 根目录
 - 用户说"请记住："→ 总结后调用 \`ji(action=记忆)\`
 - 用户说"等一下" → 调用 \`寸止\`
 - 解决问题后 → 调用 \`ji(action=沉淀, category=patterns/problems)\`
+- 对话结束前 → 调用 \`ji(action=摘要)\` 记录本次会话主题、关键词、意图
 
 ## 沉淀规则
 - 沉淀前建议调用 \`寸止\` 确认内容

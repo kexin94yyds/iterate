@@ -54,7 +54,7 @@
 
 ### `.cunzhi-memory/` - 项目级临时记忆
 - 作用：项目特定上下文，AI 自动记录
-- 文件：context.md / preferences.md / notes.md / rules.md
+- 文件：context.md / preferences.md / notes.md / rules.md / sessions.md
 - **禁止存放 problems.md**（避免与 knowledge 重叠）
 
 ### `.cunzhi-knowledge/` - 全局持久化知识库
@@ -81,6 +81,7 @@
 | 用户说"等一下" | 调用 `zhi` MCP 工具 |
 | 用户说"sou" 或需要搜索代码 | 优先 `sou` MCP，无 API 时用 `code_search` 或 `grep_search` |
 | 解决问题后 | 调用 `ji`（action=沉淀, category=patterns/problems） |
+| 对话结束前 | 调用 `ji`（action=摘要）记录本次会话主题、关键词、意图 |
 | 用户说"批量任务"或"分配给子代理" | 读取 `prompts/workflows/batch-task.md`，调用 `寸止` 确认参数后生成子代理提示词 |
 | 用户说"验收" | 执行 `git diff`，调用 `寸止` 展示验收结果 |
 | 任务量大（>20 条重复操作或预估 >5000 行输出） | 主动调用 `寸止` 询问：是否分配给子代理？ |
@@ -99,6 +100,7 @@
 
 **ji (记忆)** - L2 知识管理
 - 权限：读写 memory，读 knowledge（写需确认）
+- action：回忆 / 记忆 / 沉淀 / 摘要
 - 反模式：❌ 非 git 目录使用 ❌ 不经确认写 knowledge
 
 **sou (搜索)** - L4 代码探索

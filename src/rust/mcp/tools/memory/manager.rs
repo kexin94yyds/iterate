@@ -145,6 +145,7 @@ impl MemoryManager {
             MemoryCategory::Preference,
             MemoryCategory::Note,
             MemoryCategory::Context,
+            MemoryCategory::Session,
         ];
 
         for category in categories.iter() {
@@ -153,6 +154,7 @@ impl MemoryManager {
                 MemoryCategory::Preference => "preferences.md",
                 MemoryCategory::Note => "notes.md",
                 MemoryCategory::Context => "context.md",
+                MemoryCategory::Session => "sessions.md",
             };
 
             let file_path = self.memory_dir.join(filename);
@@ -199,6 +201,7 @@ impl MemoryManager {
             (MemoryCategory::Preference, "preferences.md"),
             (MemoryCategory::Note, "notes.md"),
             (MemoryCategory::Context, "context.md"),
+            (MemoryCategory::Session, "sessions.md"),
         ];
 
         for (category, filename) in categories.iter() {
@@ -223,6 +226,7 @@ impl MemoryManager {
             MemoryCategory::Preference => "preferences.md",
             MemoryCategory::Note => "notes.md",
             MemoryCategory::Context => "context.md",
+            MemoryCategory::Session => "sessions.md",
         };
 
         let file_path = self.memory_dir.join(filename);
@@ -241,6 +245,7 @@ impl MemoryManager {
             MemoryCategory::Preference => "preferences.md",
             MemoryCategory::Note => "notes.md",
             MemoryCategory::Context => "context.md",
+            MemoryCategory::Session => "sessions.md",
         };
 
         let file_path = self.memory_dir.join(filename);
@@ -290,6 +295,7 @@ impl MemoryManager {
             MemoryCategory::Preference => "用户偏好设置",
             MemoryCategory::Note => "临时笔记",
             MemoryCategory::Context => "项目上下文信息",
+            MemoryCategory::Session => "会话摘要",
         }
     }
 
@@ -417,6 +423,80 @@ impl MemoryManager {
         }
     }
 
+    /// 添加会话摘要（L3 近期对话摘要层）
+    /// 
+    /// 格式: ## YYYY-MM-DD HH:MM
+    ///       主题：xxx | 关键词：xxx | 意图：xxx
+    /// 
+    /// 自动保留最近 15 条，超出自动清理
+    pub fn add_session_summary(&self, content: &str) -> Result<String> {
+        let file_path = self.memory_dir.join("sessions.md");
+        let now = Utc::now();
+        let timestamp = now.format("%Y-%m-%d %H:%M").to_string();
+        
+        // 构建新的摘要条目
+        let new_entry = format!("## {}\n{}\n\n", timestamp, content);
+        
+        // 读取现有内容
+        let mut existing_content = if file_path.exists() {
+            fs::read_to_string(&file_path)?
+        } else {
+            "# 会话摘要\n\n".to_string()
+        };
+        
+        // 解析现有条目数量
+        let entry_count = existing_content.matches("## 20").count();
+        
+        // 如果超过 14 条，删除最旧的一条（保留 header + 14 条 + 新增 1 条 = 15 条）
+        if entry_count >= 15 {
+            // 找到最后一个 ## 的位置，删除它及之后的内容
+            if let Some(last_entry_pos) = existing_content.rfind("\n## 20") {
+                existing_content.truncate(last_entry_pos + 1);
+            }
+        }
+        
+        // 在 header 后插入新条目（最新的在前）
+        let header_end = existing_content.find("\n\n").unwrap_or(0) + 2;
+        let (header, rest) = existing_content.split_at(header_end);
+        let new_content = format!("{}{}{}", header, new_entry, rest);
+        
+        fs::write(&file_path, new_content)?;
+        
+        Ok(format!("✅ 会话摘要已添加\n📅 时间: {}\n📝 内容: {}", timestamp, content))
+    }
+
+    /// 获取最近的会话摘要（用于上下文注入）
+    pub fn get_recent_sessions(&self, limit: usize) -> Result<String> {
+        let file_path = self.memory_dir.join("sessions.md");
+        
+        if !file_path.exists() {
+            return Ok("📭 暂无会话摘要".to_string());
+        }
+        
+        let content = fs::read_to_string(&file_path)?;
+        let mut sessions = Vec::new();
+        
+        // 按 ## 分割解析
+        for part in content.split("\n## ").skip(1) {
+            if let Some(first_line_end) = part.find('\n') {
+                let timestamp = &part[..first_line_end];
+                let summary = part[first_line_end..].trim();
+                if !summary.is_empty() {
+                    sessions.push(format!("- **{}**: {}", timestamp, summary.lines().next().unwrap_or("")));
+                }
+            }
+            if sessions.len() >= limit {
+                break;
+            }
+        }
+        
+        if sessions.is_empty() {
+            Ok("📭 暂无会话摘要".to_string())
+        } else {
+            Ok(format!("📋 最近会话:\n{}", sessions.join("\n")))
+        }
+    }
+
     /// 获取项目信息供MCP调用方分析 - 压缩简化版本
     pub fn get_project_info(&self) -> Result<String> {
         // 汇总所有记忆规则并压缩
@@ -433,6 +513,7 @@ impl MemoryManager {
             (MemoryCategory::Preference, "偏好"),
             (MemoryCategory::Note, "笔记"),
             (MemoryCategory::Context, "背景"),
+            (MemoryCategory::Session, "摘要"),
         ];
 
         for (category, title) in categories.iter() {

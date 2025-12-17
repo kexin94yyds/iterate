@@ -18,6 +18,7 @@ pub enum MemoryCategory {
     Preference,  // 用户偏好设置
     Note,        // 临时笔记（原 Pattern，避免与 knowledge 的 patterns.md 混淆）
     Context,     // 项目上下文信息
+    Session,     // 会话摘要（L3 近期对话摘要）
 }
 
 /// 记忆元数据

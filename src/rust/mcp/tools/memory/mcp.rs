@@ -70,6 +70,14 @@ impl MemoryTool {
                 manager.settle_to_knowledge(&request.content, category)
                     .map_err(|e| McpError::internal_error(format!("沉淀失败: {}", e), None))?
             }
+            "摘要" => {
+                if request.content.trim().is_empty() {
+                    return Err(McpError::invalid_params("缺少摘要内容".to_string(), None));
+                }
+                
+                manager.add_session_summary(&request.content)
+                    .map_err(|e| McpError::internal_error(format!("添加摘要失败: {}", e), None))?
+            }
             _ => {
                 return Err(McpError::invalid_params(
                     format!("未知的操作类型: {}", request.action),
