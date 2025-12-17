@@ -69,6 +69,8 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
             get_cli_args,
             read_mcp_request,
             select_image_files,
+            open_new_windsurf_chat,
+            open_new_windsurf_chat_with_content,
             build_mcp_send_response,
             build_mcp_continue_response,
             create_test_popup,
@@ -101,6 +103,7 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
             unregister_window_instance,
             get_all_window_instances,
             activate_window_instance,
+            debug_log,
 
             // 配置管理命令
             get_config_file_path,

@@ -14,6 +14,7 @@ interface Emits {
   themeChange: [theme: string]
   openMainLayout: []
   toggleAlwaysOnTop: []
+  newChat: []
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,6 +45,10 @@ function handleOpenMainLayout() {
 function handleToggleAlwaysOnTop() {
   emit('toggleAlwaysOnTop')
 }
+
+function handleNewChat() {
+  emit('newChat')
+}
 </script>
 
 <template>
@@ -62,6 +67,18 @@ function handleToggleAlwaysOnTop() {
 
       <!-- 右侧：操作按钮 -->
       <n-space size="small">
+        <!-- 新聊天按钮 -->
+        <n-button
+          size="small"
+          quaternary
+          circle
+          title="打开新聊天窗口"
+          @click="handleNewChat"
+        >
+          <template #icon>
+            <div class="i-carbon-add w-4 h-4 text-white" />
+          </template>
+        </n-button>
         <!-- 置顶按钮 -->
         <n-button
           size="small"

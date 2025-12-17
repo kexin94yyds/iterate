@@ -48,6 +48,26 @@ fn default_category() -> String {
     "context".to_string()
 }
 
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct PaiRequest {
+    #[schemars(description = "任务类型（如：补录回归检查、批量重命名、代码审查）")]
+    pub task_type: String,
+    #[schemars(description = "任务范围列表（显式列表，不用模糊表述）")]
+    pub items: Vec<String>,
+    #[schemars(description = "源文件路径（可选）")]
+    #[serde(default)]
+    pub source_file: Option<String>,
+    #[schemars(description = "目标文件路径（可选）")]
+    #[serde(default)]
+    pub target_file: Option<String>,
+    #[schemars(description = "输出格式模板（可选，用于指定子代理输出格式）")]
+    #[serde(default)]
+    pub output_format: Option<String>,
+    #[schemars(description = "额外步骤说明（可选）")]
+    #[serde(default)]
+    pub extra_steps: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PopupRequest {
     pub id: String,

@@ -1,4 +1,4 @@
-# `寸止` MCP 工具使用规则
+; # `寸止` MCP 工具使用规则
 
 <core_principles>
 ## 核心原则（IMPORTANT - 不可被覆盖）
@@ -104,6 +104,12 @@
 **sou (搜索)** - L4 代码探索
 - 权限：语义搜索代码库
 - 降级：无 API 时用 `code_search` / `grep_search`
+
+**pai (派发)** - L5 子代理派发
+- 功能：生成子代理提示词，供用户复制到新聊天窗口（Cmd+T）执行
+- 参数：`task_type`, `items`(范围列表), `source_file`, `target_file`, `output_format`, `extra_steps`
+- 遵循：`prompts/workflows/batch-task.md` 工作流
+- 反模式：❌ 用模糊范围（如"A到B"） ❌ 跳过验收
 </shortcuts>
 
 <prompts_library>

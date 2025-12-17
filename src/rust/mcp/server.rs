@@ -7,8 +7,8 @@ use rmcp::{
 };
 use std::collections::HashMap;
 
-use super::tools::{InteractionTool, MemoryTool, AcemcpTool};
-use super::types::{ZhiRequest, JiyiRequest};
+use super::tools::{InteractionTool, MemoryTool, AcemcpTool, DispatchTool};
+use super::types::{ZhiRequest, JiyiRequest, PaiRequest};
 use crate::config::load_standalone_config;
 use crate::{log_important, log_debug};
 
@@ -160,6 +160,50 @@ impl ServerHandler for ZhiServer {
             tools.push(AcemcpTool::get_tool_definition());
         }
 
+        // 子代理派发工具 - 仅在启用时添加
+        if self.is_tool_enabled("pai") {
+            let pai_schema = serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "task_type": {
+                        "type": "string",
+                        "description": "任务类型（如：补录回归检查、批量重命名、代码审查）"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "任务范围列表（显式列表，不用模糊表述）"
+                    },
+                    "source_file": {
+                        "type": "string",
+                        "description": "源文件路径（可选）"
+                    },
+                    "target_file": {
+                        "type": "string",
+                        "description": "目标文件路径（可选）"
+                    },
+                    "output_format": {
+                        "type": "string",
+                        "description": "输出格式模板（可选，用于指定子代理输出格式）"
+                    },
+                    "extra_steps": {
+                        "type": "string",
+                        "description": "额外步骤说明（可选）"
+                    }
+                },
+                "required": ["task_type", "items"]
+            });
+
+            if let serde_json::Value::Object(schema_map) = pai_schema {
+                tools.push(Tool {
+                    name: Cow::Borrowed("pai"),
+                    description: Some(Cow::Borrowed("子代理派发工具，生成子代理提示词供用户复制到新聊天窗口执行")),
+                    input_schema: Arc::new(schema_map),
+                    annotations: None,
+                });
+            }
+        }
+
         log_debug!("返回给客户端的工具列表: {:?}", tools.iter().map(|t| &t.name).collect::<Vec<_>>());
 
         Ok(ListToolsResult {
@@ -228,6 +272,26 @@ impl ServerHandler for ZhiServer {
 
                 // 调用代码搜索工具
                 AcemcpTool::search_context(acemcp_request).await
+            }
+            "pai" => {
+                // 检查子代理派发工具是否启用
+                if !self.is_tool_enabled("pai") {
+                    return Err(McpError::internal_error(
+                        "子代理派发工具已被禁用".to_string(),
+                        None
+                    ));
+                }
+
+                // 解析请求参数
+                let arguments_value = request.arguments
+                    .map(serde_json::Value::Object)
+                    .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+
+                let pai_request: PaiRequest = serde_json::from_value(arguments_value)
+                    .map_err(|e| McpError::invalid_params(format!("参数解析失败: {}", e), None))?;
+
+                // 调用子代理派发工具
+                DispatchTool::pai(pai_request).await
             }
             _ => {
                 Err(McpError::invalid_request(

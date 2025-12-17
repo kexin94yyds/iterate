@@ -487,7 +487,86 @@ pub async fn exit_app(app: AppHandle) -> Result<(), String> {
     crate::ui::exit::force_exit_app(app).await
 }
 
+/// 打开新的 Windsurf 聊天标签页
+#[tauri::command]
+pub async fn open_new_windsurf_chat() -> Result<(), String> {
+    use std::process::Command;
 
+    // Cmd+L 聚焦聊天框，Cmd+T 打开新标签页
+    let script = r#"
+tell application "Windsurf" to activate
+delay 1.5
+tell application "System Events"
+    keystroke "l" using command down
+    delay 0.8
+    keystroke "t" using command down
+end tell
+"#;
+
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(script)
+        .output()
+        .map_err(|e| format!("执行 AppleScript 失败: {}", e))?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!("打开新聊天窗口失败: {}", stderr))
+    }
+}
+
+/// 打开新的 Windsurf 聊天标签页并发送内容
+#[tauri::command]
+pub async fn open_new_windsurf_chat_with_content(content: String) -> Result<(), String> {
+    use std::process::Command;
+
+    // 转义内容中的特殊字符
+    let escaped_content = content
+        .replace('\\', "\\\\")
+        .replace('"', "\\\"");
+
+    // 构建 AppleScript
+    let script = if escaped_content.is_empty() {
+        // 只打开新标签页
+        r#"
+tell application "Windsurf" to activate
+delay 0.3
+tell application "System Events"
+    keystroke "t" using command down
+end tell
+"#.to_string()
+    } else {
+        // 打开新标签页并发送内容
+        format!(r#"
+tell application "Windsurf" to activate
+delay 0.5
+tell application "System Events"
+    keystroke "t" using command down
+    delay 1.0
+    keystroke "l" using command down
+    delay 0.5
+    keystroke "{}"
+    delay 0.3
+    keystroke return using command down
+end tell
+"#, escaped_content)
+    };
+
+    let output = Command::new("osascript")
+        .arg("-e")
+        .arg(&script)
+        .output()
+        .map_err(|e| format!("执行 AppleScript 失败: {}", e))?;
+
+    if output.status.success() {
+        Ok(())
+    } else {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        Err(format!("打开新聊天窗口失败: {}", stderr))
+    }
+}
 
 /// 处理应用退出请求（用于前端退出快捷键）
 #[tauri::command]
@@ -920,4 +999,10 @@ pub async fn get_all_window_instances() -> Result<Vec<crate::ui::window_registry
 #[tauri::command]
 pub async fn activate_window_instance(pid: u32) -> Result<(), String> {
     crate::ui::window_registry::activate_window(pid)
+}
+
+/// 调试日志 - 输出到终端
+#[tauri::command]
+pub fn debug_log(message: String) {
+    println!("[DEBUG] {}", message);
 }

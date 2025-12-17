@@ -124,7 +124,7 @@ function handleGlobalKeydown(event: KeyboardEvent) {
     shiftKeyAlone = true
     return
   }
-  // 如果按下其他键，说明 Shift 不是单独按下的
+  // 如果按下其他键，说明不是单独按下
   shiftKeyAlone = false
 
   // Shift+Tab 恢复窗口 - 仅在 MCP 弹窗显示时生效
@@ -144,13 +144,25 @@ function handleGlobalKeydown(event: KeyboardEvent) {
   handleExitShortcut(event)
 }
 
-// Shift 键释放处理器 - 单独按 Shift 切换置顶
+// 键释放处理器
 function handleGlobalKeyup(event: KeyboardEvent) {
+  // Shift 键切换置顶
   if (event.key === 'Shift' && shiftKeyAlone && props.showMcpPopup) {
     event.preventDefault()
     emit('toggleAlwaysOnTop')
   }
   shiftKeyAlone = false
+}
+
+// 处理新聊天按钮点击 - 打开新的 Windsurf 聊天标签页
+async function handleNewChat() {
+  try {
+    await invoke('open_new_windsurf_chat')
+  }
+  catch (error) {
+    console.error('打开新聊天窗口失败:', error)
+    message.error('打开新聊天窗口失败')
+  }
 }
 
 onMounted(async () => {
@@ -173,6 +185,16 @@ onMounted(async () => {
     console.error('注册全局快捷键失败:', error)
   }
 
+  // 注册 Cmd+Shift+T 打开新聊天标签页
+  try {
+    await register('CommandOrControl+Shift+T', async () => {
+      await handleNewChat()
+    })
+  }
+  catch (error) {
+    console.error('注册 Cmd+Shift+T 快捷键失败:', error)
+  }
+
   // 注册当前窗口实例
   try {
     const projectPath = props.mcpRequest?.project_path || 'Unknown'
@@ -191,6 +213,7 @@ onUnmounted(async () => {
   // 注销全局快捷键
   try {
     await unregister('Shift+Tab')
+    await unregister('CommandOrControl+Shift+T')
   }
   catch (error) {
     console.error('注销全局快捷键失败:', error)
@@ -224,6 +247,7 @@ onUnmounted(async () => {
           @theme-change="$emit('themeChange', $event)"
           @open-main-layout="togglePopupSettings"
           @toggle-always-on-top="$emit('toggleAlwaysOnTop')"
+          @new-chat="handleNewChat"
         />
       </div>
 

@@ -347,6 +347,7 @@ pub fn default_mcp_tools() -> HashMap<String, bool> {
     tools.insert(mcp::TOOL_ZHI.to_string(), true); // iterate 工具默认启用
     tools.insert(mcp::TOOL_JI.to_string(), false); // 记忆管理工具默认关闭
     tools.insert(mcp::TOOL_SOU.to_string(), false); // 代码搜索工具默认关闭
+    tools.insert(mcp::TOOL_PAI.to_string(), false); // 子代理派发工具默认关闭
     tools
 }
 

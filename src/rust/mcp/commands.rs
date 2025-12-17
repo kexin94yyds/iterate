@@ -66,6 +66,19 @@ pub async fn get_mcp_tools_config(state: State<'_, AppState>) -> Result<Vec<MCPT
         has_config: true, // 代码搜索工具有配置选项
     });
     
+    // 子代理派发工具 - 始终存在，无配置选项
+    tools.push(MCPToolConfig {
+        id: mcp::TOOL_PAI.to_string(),
+        name: "子代理派发".to_string(),
+        description: "生成子代理提示词，供用户复制到新聊天窗口执行批量任务".to_string(),
+        enabled: config.mcp_config.tools.get(mcp::TOOL_PAI).copied().unwrap_or(false),
+        can_disable: true,
+        icon: "i-carbon-send-alt text-lg text-orange-600 dark:text-orange-400".to_string(),
+        icon_bg: "bg-orange-100 dark:bg-orange-900".to_string(),
+        dark_icon_bg: "dark:bg-orange-800".to_string(),
+        has_config: false, // 子代理派发工具暂无配置选项
+    });
+    
     // 按启用状态排序，启用的在前
     tools.sort_by(|a, b| b.enabled.cmp(&a.enabled));
     
