@@ -2,7 +2,14 @@ use anyhow::Result;
 use rmcp::{Error as McpError, model::*};
 
 use super::{MemoryManager, MemoryCategory};
-use crate::mcp::{JiyiRequest, utils::{validate_project_path, project_path_error}};
+// 从 mcp 模块导入：
+// - JiyiRequest: 记忆操作的请求结构体
+// - PopupRequest: 弹窗请求结构体
+// - validate_project_path: 验证项目路径的工具函数
+// - project_path_error: 生成路径错误的工具函数
+// - generate_request_id: 生成唯一请求ID的工具函数
+use crate::mcp::{JiyiRequest, PopupRequest, utils::{validate_project_path, project_path_error, generate_request_id}};
+use crate::mcp::handlers::create_tauri_popup;
 
 /// 全局记忆管理工具
 ///
@@ -76,6 +83,29 @@ impl MemoryTool {
                             None
                         ));
                     }
+                }
+                
+                // 弹窗确认
+                let confirm_msg = format!(
+                    "## 确认沉淀到 .cunzhi-knowledge/{}\n\n```\n{}\n```",
+                    if category == "patterns" { "patterns.md" } else { "problems.md" },
+                    &request.content
+                );
+                
+                let popup_request = PopupRequest {
+                    id: generate_request_id(),
+                    message: confirm_msg,
+                    predefined_options: Some(vec!["确认沉淀".to_string(), "取消".to_string()]),
+                    is_markdown: true,
+                    project_path: Some(request.project_path.clone()),
+                };
+                
+                let response = create_tauri_popup(&popup_request)
+                    .map_err(|e| McpError::internal_error(format!("弹窗失败: {}", e), None))?;
+                
+                // 检查用户是否确认
+                if response.contains("取消") || response.contains("CANCELLED") {
+                    return Ok(CallToolResult::success(vec![Content::text("❌ 用户取消沉淀".to_string())]));
                 }
                 
                 manager.settle_to_knowledge(&request.content, category)
