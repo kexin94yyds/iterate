@@ -62,7 +62,7 @@ impl MemoryTool {
                 let category = match request.category.as_str() {
                     "patterns" | "problems" => request.category.as_str(),
                     _ => return Err(McpError::invalid_params(
-                        format!("沉淀仅支持 patterns/problems 分类，收到: {}", request.category),
+                            format!("沉淀仅支持 patterns/problems 分类，收到: {}", request.category),
                         None
                     )),
                 };

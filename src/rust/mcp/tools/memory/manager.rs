@@ -403,9 +403,9 @@ impl MemoryManager {
         if problems_path.exists() {
             if let Ok(content) = fs::read_to_string(&problems_path) {
                 // 统计问题数量
-                let open_count = content.matches("状态: open").count();
-                let fixed_count = content.matches("状态: fixed").count();
-                let verified_count = content.matches("状态: verified").count();
+                let open_count = content.matches("状态：open").count();
+                let fixed_count = content.matches("状态：fixed").count();
+                let verified_count = content.matches("状态：verified").count();
                 
                 if open_count + fixed_count + verified_count > 0 {
                     knowledge_parts.push(format!(
