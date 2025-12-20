@@ -2,8 +2,10 @@ use anyhow::Result;
 use std::process::Command;
 use std::fs;
 use std::path::Path;
+use std::time::Instant;
 
 use crate::mcp::types::PopupRequest;
+use crate::log_important;
 
 /// 创建 Tauri 弹窗
 ///
@@ -18,11 +20,20 @@ pub fn create_tauri_popup(request: &PopupRequest) -> Result<String> {
     // 尝试找到 iterate 命令的路径
     let command_path = find_ui_command()?;
 
+    // 记录弹窗开始时间
+    let start = Instant::now();
+    let pid = std::process::id();
+    log_important!(info, "[POPUP] 开始等待弹窗 PID={} request_id={}", pid, request.id);
+
     // 调用 iterate 命令
     let output = Command::new(&command_path)
         .arg("--mcp-request")
         .arg(temp_file.to_string_lossy().to_string())
         .output()?;
+
+    // 记录弹窗结束时间
+    let elapsed = start.elapsed();
+    log_important!(info, "[POPUP] 弹窗完成 PID={} request_id={} 耗时={:.2}s", pid, request.id, elapsed.as_secs_f64());
 
     // 清理临时文件
     let _ = fs::remove_file(&temp_file);

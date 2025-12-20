@@ -307,15 +307,22 @@ impl ServerHandler for ZhiServer {
 
 /// 启动MCP服务器
 pub async fn run_server() -> Result<(), Box<dyn std::error::Error>> {
+    // 记录启动信息
+    let pid = std::process::id();
+    log_important!(info, "[MCP] 服务器启动 PID={}", pid);
+    
     // 创建并运行服务器
     let service = ZhiServer::new()
         .serve(stdio())
         .await
         .inspect_err(|e| {
-            log_important!(error, "启动服务器失败: {}", e);
+            log_important!(error, "[MCP] 启动服务器失败 PID={}: {}", pid, e);
         })?;
 
+    log_important!(info, "[MCP] 服务器开始监听 PID={}", pid);
+    
     // 等待服务器关闭
-    service.waiting().await?;
-    Ok(())
+    let result = service.waiting().await;
+    log_important!(info, "[MCP] 服务器退出 PID={} result={:?}", pid, result.is_ok());
+    result.map(|_| ()).map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
 }
