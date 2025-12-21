@@ -54,6 +54,7 @@ impl MemoryTool {
                 format!("{}\n{}", memory_info, knowledge_info)
             }
             "沉淀" => {
+                // 第一步：返回预览，提示 AI 用 zhi 确认
                 if request.content.trim().is_empty() {
                     return Err(McpError::invalid_params("缺少沉淀内容".to_string(), None));
                 }
@@ -68,6 +69,47 @@ impl MemoryTool {
                 };
                 
                 // 验证 problems 格式必须包含 P-YYYY-NNN
+                if category == "problems" {
+                    let pattern = regex::Regex::new(r"P-\d{4}-\d{3}").unwrap();
+                    if !pattern.is_match(&request.content) {
+                        return Err(McpError::invalid_params(
+                            "沉淀 problems 必须包含 P-YYYY-NNN 格式的编号（如 P-2024-001）".to_string(),
+                            None
+                        ));
+                    }
+                }
+                
+                // 返回预览，不执行写入
+                let target_file = if category == "patterns" { "patterns.md" } else { "problems.md" };
+                format!(
+                    r#"📋 **沉淀预览**
+
+> 目标文件: `.cunzhi-knowledge/{}`
+
+```
+{}
+```
+
+⚠️ **请调用 `zhi` 工具让用户确认**，确认后再调用 `ji(action=确认沉淀)` 执行写入。"#,
+                    target_file,
+                    &request.content
+                )
+            }
+            "确认沉淀" => {
+                // 第二步：用户确认后执行实际写入
+                if request.content.trim().is_empty() {
+                    return Err(McpError::invalid_params("缺少沉淀内容".to_string(), None));
+                }
+                
+                let category = match request.category.as_str() {
+                    "patterns" | "problems" => request.category.as_str(),
+                    _ => return Err(McpError::invalid_params(
+                            format!("沉淀仅支持 patterns/problems 分类，收到: {}", request.category),
+                        None
+                    )),
+                };
+                
+                // 验证 problems 格式
                 if category == "problems" {
                     let pattern = regex::Regex::new(r"P-\d{4}-\d{3}").unwrap();
                     if !pattern.is_match(&request.content) {
