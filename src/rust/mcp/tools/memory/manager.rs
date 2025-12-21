@@ -334,7 +334,7 @@ impl MemoryManager {
         Ok(knowledge_dir)
     }
 
-    /// 写入全局知识库（沉淀）
+    /// 写入全局知识库（沉淀）并自动 git push
     pub fn settle_to_knowledge(&self, content: &str, category: &str) -> Result<String> {
         let knowledge_dir = self.get_knowledge_dir()?;
         
@@ -361,7 +361,63 @@ impl MemoryManager {
         // 写入文件
         fs::write(&file_path, file_content)?;
         
-        Ok(format!("✅ 已沉淀到 .cunzhi-knowledge/{}\n📝 内容: {}\n⚠️ 请记得 git push 同步到远程", filename, content))
+        // 自动 git add/commit/push
+        let git_result = self.git_push_knowledge(&knowledge_dir, filename, content);
+        
+        match git_result {
+            Ok(msg) => Ok(format!("✅ 已沉淀到 .cunzhi-knowledge/{}\n{}", filename, msg)),
+            Err(e) => Ok(format!("✅ 已沉淀到 .cunzhi-knowledge/{}\n⚠️ Git 同步失败: {}\n请手动执行 git push", filename, e)),
+        }
+    }
+    
+    /// 自动 git push 知识库更改
+    fn git_push_knowledge(&self, knowledge_dir: &Path, filename: &str, content: &str) -> Result<String> {
+        use std::process::Command;
+        
+        // 提取简短描述作为 commit message
+        let short_desc = content.lines()
+            .find(|l| !l.trim().is_empty())
+            .unwrap_or("沉淀内容")
+            .chars()
+            .take(50)
+            .collect::<String>();
+        
+        // git add
+        let add_output = Command::new("git")
+            .args(["add", filename])
+            .current_dir(knowledge_dir)
+            .output()?;
+        
+        if !add_output.status.success() {
+            return Err(anyhow::anyhow!("git add 失败: {}", String::from_utf8_lossy(&add_output.stderr)));
+        }
+        
+        // git commit
+        let commit_msg = format!("沉淀: {}", short_desc);
+        let commit_output = Command::new("git")
+            .args(["commit", "-m", &commit_msg])
+            .current_dir(knowledge_dir)
+            .output()?;
+        
+        if !commit_output.status.success() {
+            let stderr = String::from_utf8_lossy(&commit_output.stderr);
+            // 如果是 "nothing to commit" 则忽略
+            if !stderr.contains("nothing to commit") {
+                return Err(anyhow::anyhow!("git commit 失败: {}", stderr));
+            }
+        }
+        
+        // git push
+        let push_output = Command::new("git")
+            .args(["push"])
+            .current_dir(knowledge_dir)
+            .output()?;
+        
+        if !push_output.status.success() {
+            return Err(anyhow::anyhow!("git push 失败: {}", String::from_utf8_lossy(&push_output.stderr)));
+        }
+        
+        Ok("🚀 已自动推送到 GitHub".to_string())
     }
 
     /// 读取全局知识库内容

@@ -125,11 +125,13 @@ fn format_log_entry(entry: &ConversationEntry, timestamp: &str) -> String {
     content
 }
 
-/// 截取消息，避免日志过长
-fn truncate_message(msg: &str, max_len: usize) -> String {
-    if msg.len() <= max_len {
+/// 截取消息，避免日志过长（安全处理 UTF-8 边界）
+fn truncate_message(msg: &str, max_chars: usize) -> String {
+    let char_count = msg.chars().count();
+    if char_count <= max_chars {
         msg.to_string()
     } else {
-        format!("{}...\n\n*(已截断)*", &msg[..max_len])
+        let truncated: String = msg.chars().take(max_chars).collect();
+        format!("{}...\n\n*(已截断)*", truncated)
     }
 }
