@@ -341,7 +341,8 @@ impl MemoryManager {
         let filename = match category {
             "patterns" => "patterns.md",
             "problems" => "problems.md",
-            _ => return Err(anyhow::anyhow!("不支持的知识库分类: {}，仅支持 patterns/problems", category)),
+            "regressions" => "regressions.md",
+            _ => return Err(anyhow::anyhow!("不支持的知识库分类: {}，仅支持 patterns/problems/regressions", category)),
         };
         
         let file_path = knowledge_dir.join(filename);

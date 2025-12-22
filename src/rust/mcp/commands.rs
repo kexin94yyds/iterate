@@ -31,7 +31,7 @@ pub async fn get_mcp_tools_config(state: State<'_, AppState>) -> Result<Vec<MCPT
     tools.push(MCPToolConfig {
         id: mcp::TOOL_ZHI.to_string(),
         name: "iterate".to_string(),
-        description: "智能代码审查交互工具，支持预定义选项、自由文本输入和图片上传".to_string(),
+        description: "智能代码审查交互工具（L0 协调者）。所有对话必经，控制任务流程。支持预定义选项、自由文本输入和图片上传。".to_string(),
         enabled: config.mcp_config.tools.get(mcp::TOOL_ZHI).copied().unwrap_or(true),
         can_disable: false, // iterate 工具是必需的
         icon: "i-carbon-chat text-lg text-blue-600 dark:text-blue-400".to_string(),
@@ -44,7 +44,7 @@ pub async fn get_mcp_tools_config(state: State<'_, AppState>) -> Result<Vec<MCPT
     tools.push(MCPToolConfig {
         id: mcp::TOOL_JI.to_string(),
         name: "记忆管理".to_string(),
-        description: "全局记忆管理工具，用于存储和管理重要的开发规范、用户偏好和最佳实践".to_string(),
+        description: "全局记忆管理工具。支持 4 种 action：回忆/记忆/沉淀/摘要。必须绑定 git 根目录。".to_string(),
         enabled: config.mcp_config.tools.get(mcp::TOOL_JI).copied().unwrap_or(false),
         can_disable: true,
         icon: "i-carbon-data-base text-lg text-purple-600 dark:text-purple-400".to_string(),
@@ -57,7 +57,7 @@ pub async fn get_mcp_tools_config(state: State<'_, AppState>) -> Result<Vec<MCPT
     tools.push(MCPToolConfig {
         id: mcp::TOOL_SOU.to_string(),
         name: "代码搜索".to_string(),
-        description: "基于查询在特定项目中搜索相关的代码上下文，支持语义搜索和增量索引".to_string(),
+        description: "智能代码搜索工具。自动判断搜索类型：代码相关→语义搜索；外部知识→网络搜索。".to_string(),
         enabled: config.mcp_config.tools.get(mcp::TOOL_SOU).copied().unwrap_or(false),
         can_disable: true,
         icon: "i-carbon-search text-lg text-green-600 dark:text-green-400".to_string(),
@@ -70,13 +70,26 @@ pub async fn get_mcp_tools_config(state: State<'_, AppState>) -> Result<Vec<MCPT
     tools.push(MCPToolConfig {
         id: mcp::TOOL_PAI.to_string(),
         name: "子代理派发".to_string(),
-        description: "生成子代理提示词，供用户复制到新聊天窗口执行批量任务".to_string(),
+        description: "子代理派发工具。生成子代理提示词供用户复制到新聊天窗口执行。".to_string(),
         enabled: config.mcp_config.tools.get(mcp::TOOL_PAI).copied().unwrap_or(false),
         can_disable: true,
         icon: "i-carbon-send-alt text-lg text-orange-600 dark:text-orange-400".to_string(),
         icon_bg: "bg-orange-100 dark:bg-orange-900".to_string(),
         dark_icon_bg: "dark:bg-orange-800".to_string(),
         has_config: false, // 子代理派发工具暂无配置选项
+    });
+    
+    // 经验查找工具 - 始终存在，无配置选项
+    tools.push(MCPToolConfig {
+        id: mcp::TOOL_XI.to_string(),
+        name: "经验查找".to_string(),
+        description: "经验查找工具。在 .cunzhi-knowledge/ 中查找相关历史经验。".to_string(),
+        enabled: config.mcp_config.tools.get(mcp::TOOL_XI).copied().unwrap_or(false),
+        can_disable: true,
+        icon: "i-carbon-book text-lg text-cyan-600 dark:text-cyan-400".to_string(),
+        icon_bg: "bg-cyan-100 dark:bg-cyan-900".to_string(),
+        dark_icon_bg: "dark:bg-cyan-800".to_string(),
+        has_config: false, // 经验查找工具暂无配置选项
     });
     
     // 按启用状态排序，启用的在前

@@ -49,6 +49,25 @@ fn default_category() -> String {
 }
 
 #[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct XiRequest {
+    #[schemars(description = "用于查找相关历史经验的自然语言查询")]
+    pub query: String,
+    #[schemars(description = "项目路径（必需）")]
+    pub project_path: String,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
+pub struct CiRequest {
+    #[schemars(description = "提示词库目录名（如 ci、git、testing），默认为 ci")]
+    pub directory: String,
+    #[schemars(description = "项目路径（必需）")]
+    pub project_path: String,
+    #[schemars(description = "搜索关键词（可选，用于过滤模板）")]
+    #[serde(default)]
+    pub query: Option<String>,
+}
+
+#[derive(Debug, Deserialize, schemars::JsonSchema)]
 pub struct PaiRequest {
     #[schemars(description = "任务类型（如：补录回归检查、批量重命名、代码审查）")]
     pub task_type: String,

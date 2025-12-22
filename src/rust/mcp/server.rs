@@ -7,8 +7,8 @@ use rmcp::{
 };
 use std::collections::HashMap;
 
-use super::tools::{InteractionTool, MemoryTool, AcemcpTool, DispatchTool};
-use super::types::{ZhiRequest, JiyiRequest, PaiRequest};
+use super::tools::{InteractionTool, MemoryTool, AcemcpTool, DispatchTool, XiTool, CiTool};
+use super::types::{ZhiRequest, JiyiRequest, PaiRequest, XiRequest, CiRequest};
 use crate::config::load_standalone_config;
 use crate::{log_important, log_debug};
 
@@ -114,7 +114,7 @@ impl ServerHandler for ZhiServer {
         if let serde_json::Value::Object(schema_map) = zhi_schema {
             tools.push(Tool {
                 name: Cow::Borrowed("zhi"),
-                description: Some(Cow::Borrowed("智能代码审查交互工具，支持预定义选项、自由文本输入和图片上传")),
+                description: Some(Cow::Borrowed("智能代码审查交互工具（L0 协调者）。所有对话必经，控制任务流程。支持预定义选项、自由文本输入和图片上传。")),
                 input_schema: Arc::new(schema_map),
                 annotations: None,
             });
@@ -148,7 +148,7 @@ impl ServerHandler for ZhiServer {
             if let serde_json::Value::Object(schema_map) = ji_schema {
                 tools.push(Tool {
                     name: Cow::Borrowed("ji"),
-                    description: Some(Cow::Borrowed("全局记忆管理工具，用于存储和管理重要的开发规范、用户偏好和最佳实践")),
+                    description: Some(Cow::Borrowed("全局记忆管理工具。支持 4 种 action：回忆/记忆/沉淀/摘要。必须绑定 git 根目录。用于存储开发规范、用户偏好和最佳实践。")),
                     input_schema: Arc::new(schema_map),
                     annotations: None,
                 });
@@ -158,6 +158,64 @@ impl ServerHandler for ZhiServer {
         // 代码搜索工具 - 仅在启用时添加
         if self.is_tool_enabled("sou") {
             tools.push(AcemcpTool::get_tool_definition());
+        }
+
+        // 经验查找工具 - 仅在启用时添加
+        if self.is_tool_enabled("xi") {
+            let xi_schema = serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "用于查找相关历史经验的自然语言查询"
+                    },
+                    "project_path": {
+                        "type": "string",
+                        "description": "项目路径（必需）"
+                    }
+                },
+                "required": ["query", "project_path"]
+            });
+
+            if let serde_json::Value::Object(schema_map) = xi_schema {
+                tools.push(Tool {
+                    name: Cow::Borrowed("xi"),
+                    description: Some(Cow::Borrowed("经验查找工具。在 .cunzhi-knowledge/ 中查找相关历史经验（patterns.md、problems.md、regressions.md）。")),
+                    input_schema: Arc::new(schema_map),
+                    annotations: None,
+                });
+            }
+        }
+
+        // 提示词库搜索工具 - 仅在启用时添加
+        if self.is_tool_enabled("ci") {
+            let ku_schema = serde_json::json!({
+                "type": "object",
+                "properties": {
+                    "directory": {
+                        "type": "string",
+                        "description": "提示词库目录名（如 ci、git、testing）"
+                    },
+                    "project_path": {
+                        "type": "string",
+                        "description": "项目路径（必需）"
+                    },
+                    "query": {
+                        "type": "string",
+                        "description": "搜索关键词（可选，用于过滤模板）"
+                    }
+                },
+                "required": ["directory", "project_path"]
+            });
+
+            if let serde_json::Value::Object(schema_map) = ku_schema {
+                tools.push(Tool {
+                    name: Cow::Borrowed("ci"),
+                    description: Some(Cow::Borrowed("提示词库搜索工具。在 .cunzhi-knowledge/prompts/ 中搜索相关模板。触发：用户输入目录名（如 ci、git、testing）。")),
+                    input_schema: Arc::new(schema_map),
+                    annotations: None,
+                });
+            }
         }
 
         // 子代理派发工具 - 仅在启用时添加
@@ -197,7 +255,7 @@ impl ServerHandler for ZhiServer {
             if let serde_json::Value::Object(schema_map) = pai_schema {
                 tools.push(Tool {
                     name: Cow::Borrowed("pai"),
-                    description: Some(Cow::Borrowed("子代理派发工具，生成子代理提示词供用户复制到新聊天窗口执行")),
+                    description: Some(Cow::Borrowed("子代理派发工具。生成子代理提示词供用户复制到新聊天窗口执行。遵循 batch-task.md 工作流，禁止模糊范围。")),
                     input_schema: Arc::new(schema_map),
                     annotations: None,
                 });
@@ -292,6 +350,46 @@ impl ServerHandler for ZhiServer {
 
                 // 调用子代理派发工具
                 DispatchTool::pai(pai_request).await
+            }
+            "xi" => {
+                // 检查经验查找工具是否启用
+                if !self.is_tool_enabled("xi") {
+                    return Err(McpError::internal_error(
+                        "经验查找工具已被禁用".to_string(),
+                        None
+                    ));
+                }
+
+                // 解析请求参数
+                let arguments_value = request.arguments
+                    .map(serde_json::Value::Object)
+                    .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+
+                let xi_request: XiRequest = serde_json::from_value(arguments_value)
+                    .map_err(|e| McpError::invalid_params(format!("参数解析失败: {}", e), None))?;
+
+                // 调用经验查找工具
+                XiTool::search_experience(xi_request).await
+            }
+            "ci" => {
+                // 检查提示词库搜索工具是否启用
+                if !self.is_tool_enabled("ci") {
+                    return Err(McpError::internal_error(
+                        "ci 工具已被禁用".to_string(),
+                        None
+                    ));
+                }
+
+                // 解析请求参数
+                let arguments_value = request.arguments
+                    .map(serde_json::Value::Object)
+                    .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+
+                let ci_request: CiRequest = serde_json::from_value(arguments_value)
+                    .map_err(|e| McpError::invalid_params(format!("参数解析失败: {}", e), None))?;
+
+                // 调用提示词库搜索工具
+                CiTool::search_prompts(ci_request).await
             }
             _ => {
                 Err(McpError::invalid_request(

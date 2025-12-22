@@ -1,11 +1,27 @@
 //! 对话日志记录模块
 //!
 //! 自动记录 zhi 工具的 AI 提问和用户回答
+//! 支持 5 分钟防抖自动同步到 GitHub
 
 use chrono::Local;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Mutex;
+use std::process::Command;
+
+/// 全局状态：是否有待同步的对话
+static PENDING_SYNC: AtomicBool = AtomicBool::new(false);
+
+/// 上次写入时间戳（Unix 秒）
+static LAST_WRITE_TIMESTAMP: AtomicU64 = AtomicU64::new(0);
+
+/// 知识库路径缓存
+static KNOWLEDGE_DIR_CACHE: Mutex<Option<PathBuf>> = Mutex::new(None);
+
+/// 防抖间隔：5 分钟
+const SYNC_DEBOUNCE_SECS: u64 = 300;
 
 /// 对话日志条目
 pub struct ConversationEntry {
@@ -47,6 +63,9 @@ fn append_conversation_log_inner(entry: &ConversationEntry) -> std::io::Result<(
         .open(&log_file)?;
     
     file.write_all(log_content.as_bytes())?;
+    
+    // 标记有待同步，并启动防抖同步
+    mark_pending_sync(&knowledge_dir);
     
     Ok(())
 }
@@ -133,5 +152,110 @@ fn truncate_message(msg: &str, max_chars: usize) -> String {
     } else {
         let truncated: String = msg.chars().take(max_chars).collect();
         format!("{}...\n\n*(已截断)*", truncated)
+    }
+}
+
+/// 标记有待同步，并启动防抖同步任务
+fn mark_pending_sync(knowledge_dir: &PathBuf) {
+    PENDING_SYNC.store(true, Ordering::SeqCst);
+    
+    // 更新最后写入时间戳
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    LAST_WRITE_TIMESTAMP.store(now, Ordering::SeqCst);
+    
+    // 缓存知识库路径
+    if let Ok(mut cache) = KNOWLEDGE_DIR_CACHE.lock() {
+        *cache = Some(knowledge_dir.clone());
+    }
+    
+    // 启动后台同步任务（防抖）
+    std::thread::spawn(move || {
+        // 等待防抖间隔
+        std::thread::sleep(std::time::Duration::from_secs(SYNC_DEBOUNCE_SECS));
+        
+        // 检查是否在等待期间有新写入（防抖）
+        let current_time = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let last_write = LAST_WRITE_TIMESTAMP.load(Ordering::SeqCst);
+        let should_sync = current_time >= last_write + SYNC_DEBOUNCE_SECS;
+        
+        if should_sync && PENDING_SYNC.load(Ordering::SeqCst) {
+            // 从缓存获取知识库路径
+            if let Ok(cache) = KNOWLEDGE_DIR_CACHE.lock() {
+                if let Some(ref dir) = *cache {
+                    sync_conversations(dir);
+                }
+            }
+        }
+    });
+}
+
+/// 同步对话记录到 GitHub
+fn sync_conversations(knowledge_dir: &PathBuf) {
+    // 重置待同步标记
+    PENDING_SYNC.store(false, Ordering::SeqCst);
+    
+    let conversations_dir = knowledge_dir.join("conversations");
+    if !conversations_dir.exists() {
+        return;
+    }
+    
+    // git add conversations/
+    let add_result = Command::new("git")
+        .args(["add", "conversations/"])
+        .current_dir(knowledge_dir)
+        .output();
+    
+    if let Err(e) = add_result {
+        eprintln!("[cunzhi] git add 失败: {}", e);
+        return;
+    }
+    
+    // git commit
+    let today = Local::now().format("%Y-%m-%d").to_string();
+    let commit_msg = format!("sync: 对话记录 {}", today);
+    let commit_result = Command::new("git")
+        .args(["commit", "-m", &commit_msg])
+        .current_dir(knowledge_dir)
+        .output();
+    
+    if let Ok(output) = commit_result {
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            // 如果是 "nothing to commit" 则忽略
+            if !stderr.contains("nothing to commit") {
+                eprintln!("[cunzhi] git commit 失败: {}", stderr);
+            }
+            return;
+        }
+    }
+    
+    // git push
+    let push_result = Command::new("git")
+        .args(["push"])
+        .current_dir(knowledge_dir)
+        .output();
+    
+    if let Err(e) = push_result {
+        eprintln!("[cunzhi] git push 失败: {}", e);
+    } else {
+        eprintln!("[cunzhi] 对话记录已同步到 GitHub");
+    }
+}
+
+/// 强制立即同步（用于应用退出时）
+pub fn force_sync_conversations() {
+    if !PENDING_SYNC.load(Ordering::SeqCst) {
+        return;
+    }
+    
+    // 尝试查找知识库目录
+    if let Ok(knowledge_dir) = find_knowledge_dir(None) {
+        sync_conversations(&knowledge_dir);
     }
 }
