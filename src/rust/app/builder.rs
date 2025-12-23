@@ -133,6 +133,7 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
             crate::browser::stop_browser_monitoring,
             crate::browser::get_browser_monitor_status,
             crate::browser::open_browser_url,
+            crate::browser::send_message_to_browser_ai,
             crate::browser::show_ai_completion_popup
         ])
         .setup(|app| {

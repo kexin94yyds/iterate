@@ -301,4 +301,43 @@ if (!config) {
     }
     return false
   }
+
+  // 获取最新的 AI 回复内容
+  function getLatestAIResponse() {
+    const responseSelectors = {
+      'chatgpt.com': '[data-message-author-role="assistant"] .markdown',
+      'chat.openai.com': '[data-message-author-role="assistant"] .markdown',
+      'gemini.google.com': '.model-response-text, .response-content',
+      'aistudio.google.com': '.response-container, .model-response',
+      'claude.ai': '[data-testid="assistant-message"], .assistant-message',
+      'chat.deepseek.com': '.assistant-message, .ai-response',
+      'kimi.moonshot.cn': '.assistant-message',
+      'tongyi.aliyun.com': '.assistant-message',
+      'www.doubao.com': '.assistant-message',
+    }
+
+    const selector = responseSelectors[hostname] || '.assistant-message, .ai-response, .model-response'
+    const responses = document.querySelectorAll(selector)
+
+    if (responses.length === 0) {
+      console.log('[iterate] ⚠️ 找不到 AI 回复')
+      return null
+    }
+
+    // 获取最后一个回复
+    const lastResponse = responses[responses.length - 1]
+    const content = lastResponse.textContent
+    console.log('[iterate] 📖 获取到 AI 回复，长度:', content?.length)
+    return content?.trim() || null
+  }
+
+  // 监听来自 background 的获取回复请求
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'GET_AI_RESPONSE') {
+      console.log('[iterate] 📝 收到获取 AI 回复请求')
+      const response = getLatestAIResponse()
+      sendResponse({ success: !!response, content: response })
+    }
+    return true
+  })
 }

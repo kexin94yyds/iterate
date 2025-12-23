@@ -119,6 +119,18 @@ pub struct AiCompletionEvent {
     pub site_name: String,
     pub message_preview: String,
     pub timestamp: chrono::DateTime<chrono::Utc>,
+    /// 运行时间（秒）- AI Studio "Ran for Xs"
+    #[serde(default)]
+    pub run_time: Option<u32>,
+    /// 思考时间（秒）- "Thought for X seconds"
+    #[serde(default)]
+    pub think_time: Option<u32>,
+    /// 是否为图片生成完成
+    #[serde(default)]
+    pub image_generated: bool,
+    /// 新生成的图片数量
+    #[serde(default)]
+    pub new_images: Option<u32>,
 }
 
 impl AiCompletionEvent {
@@ -129,6 +141,10 @@ impl AiCompletionEvent {
             site_name: page_state.site_name.clone(),
             message_preview,
             timestamp: chrono::Utc::now(),
+            run_time: None,
+            think_time: None,
+            image_generated: false,
+            new_images: None,
         }
     }
 }

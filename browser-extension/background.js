@@ -1,6 +1,7 @@
 // WebSocket 连接到 iterate 应用
 let ws = null
 let wsReconnectTimer = null
+let heartbeatTimer = null
 const WS_URL = 'ws://127.0.0.1:9333'
 
 // 连接 WebSocket
@@ -13,10 +14,12 @@ function connectWebSocket() {
     ws.onopen = () => {
       console.log('[Iterate] WebSocket 已连接')
       clearReconnectTimer()
+      startHeartbeat()
     }
 
     ws.onclose = () => {
       console.log('[Iterate] WebSocket 已断开')
+      stopHeartbeat()
       scheduleReconnect()
     }
 
@@ -26,10 +29,40 @@ function connectWebSocket() {
 
     ws.onmessage = (event) => {
       console.log('[Iterate] 收到消息:', event.data)
+      try {
+        const data = JSON.parse(event.data)
+        // 处理发送消息到 AI 的请求
+        if (data.type === 'send_message') {
+          sendMessageToAI(data.message, data.tabId)
+        }
+        // 处理获取 AI 回复的请求
+        if (data.type === 'get_ai_response') {
+          getAIResponse(data.tabId)
+        }
+      } catch (e) {
+        console.log('[Iterate] 解析消息失败:', e)
+      }
     }
   } catch (error) {
     console.log('[Iterate] WebSocket 连接失败:', error)
     scheduleReconnect()
+  }
+}
+
+// 心跳保持连接
+function startHeartbeat() {
+  stopHeartbeat()
+  heartbeatTimer = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: 'ping' }))
+    }
+  }, 15000) // 每 15 秒发送心跳
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer)
+    heartbeatTimer = null
   }
 }
 
@@ -95,6 +128,63 @@ chrome.notifications.onClicked.addListener((notificationId) => {
   // 可以在这里实现跳转到对应标签页的逻辑
   console.log('[Iterate] 通知被点击:', notificationId)
 })
+
+// 发送消息到 AI 网站
+async function sendMessageToAI(message, tabId) {
+  console.log('[Iterate] 发送消息到 AI:', message, 'tabId:', tabId)
+  
+  // 如果指定了 tabId，发送到指定 tab
+  if (tabId) {
+    chrome.tabs.sendMessage(tabId, {
+      type: 'INJECT_MESSAGE',
+      message: message
+    })
+    return
+  }
+  
+  // 否则发送到当前活动的 AI 网站 tab
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+  if (tabs.length > 0) {
+    chrome.tabs.sendMessage(tabs[0].id, {
+      type: 'INJECT_MESSAGE',
+      message: message
+    })
+  }
+}
+
+// 获取 AI 回复
+async function getAIResponse(tabId) {
+  console.log('[Iterate] 获取 AI 回复, tabId:', tabId)
+
+  let targetTabId = tabId
+  if (!targetTabId) {
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+    if (tabs.length > 0) {
+      targetTabId = tabs[0].id
+    }
+  }
+
+  if (!targetTabId) {
+    console.log('[Iterate] 找不到目标 tab')
+    return
+  }
+
+  try {
+    const response = await chrome.tabs.sendMessage(targetTabId, { type: 'GET_AI_RESPONSE' })
+    console.log('[Iterate] 获取到 AI 回复:', response)
+
+    if (response?.success && response?.content && ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: 'ai_response',
+        content: response.content,
+        tabId: targetTabId,
+      }))
+    }
+  }
+  catch (e) {
+    console.log('[Iterate] 获取 AI 回复失败:', e.message)
+  }
+}
 
 // 扩展启动时连接 WebSocket
 connectWebSocket()

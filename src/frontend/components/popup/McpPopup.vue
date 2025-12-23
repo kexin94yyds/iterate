@@ -71,6 +71,11 @@ const inputRef = ref()
 const continueReplyEnabled = ref(true)
 const continuePrompt = ref('请按照最佳实践继续')
 
+// 发送目标：ide 或 browser（从 localStorage 读取持久化设置）
+const SEND_TARGET_KEY = 'iterate_send_target'
+const savedTarget = localStorage.getItem(SEND_TARGET_KEY) as 'ide' | 'browser' | null
+const sendTarget = ref<'ide' | 'browser'>(savedTarget || 'ide')
+
 // 计算属性
 const isVisible = computed(() => !!props.request)
 const hasOptions = computed(() => (props.request?.predefined_options?.length ?? 0) > 0)
@@ -215,7 +220,7 @@ function resetForm() {
   submitting.value = false
 }
 
-// 处理提交
+// 处理提交（根据 sendTarget 决定发送目标）
 async function handleSubmit() {
   if (!canSubmit.value || submitting.value)
     return
@@ -223,47 +228,69 @@ async function handleSubmit() {
   submitting.value = true
 
   try {
-    // 使用新的结构化数据格式
-    const response = {
-      user_input: userInput.value.trim() || null,
-      selected_options: selectedOptions.value,
-      images: draggedImages.value.map(imageData => ({
-        data: imageData.split(',')[1], // 移除 data:image/png;base64, 前缀
-        media_type: 'image/png',
-        filename: null,
-      })),
-      metadata: {
-        timestamp: new Date().toISOString(),
-        request_id: props.request?.id || null,
-        source: 'popup',
-      },
-    }
+    // 根据发送目标选择不同的处理逻辑
+    if (sendTarget.value === 'browser') {
+      // 发送到浏览器 AI
+      const messageText = userInput.value.trim()
+      if (!messageText) {
+        message.warning('请输入要发送的消息')
+        return
+      }
 
-    // 如果没有任何有效内容，设置默认用户输入
-    if (!response.user_input && response.selected_options.length === 0 && response.images.length === 0) {
-      response.user_input = '用户确认继续'
-    }
+      await invoke('send_message_to_browser_ai', { message: messageText })
+      message.success('消息已发送到浏览器 AI')
 
-    if (props.mockMode) {
-      // 模拟模式下的延迟
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      message.success('模拟响应发送成功')
+      userInput.value = ''
+      setTimeout(async () => {
+        const window = getCurrentWindow()
+        await window.close()
+      }, 300)
     }
     else {
-      // 实际发送响应
-      await invoke('send_mcp_response', { response })
-      await invoke('exit_app')
-    }
+      // 发送到 IDE
+      const response = {
+        user_input: userInput.value.trim() || null,
+        selected_options: selectedOptions.value,
+        images: draggedImages.value.map(imageData => ({
+          data: imageData.split(',')[1],
+          media_type: 'image/png',
+          filename: null,
+        })),
+        metadata: {
+          timestamp: new Date().toISOString(),
+          request_id: props.request?.id || null,
+          source: 'popup',
+        },
+      }
 
-    emit('response', response)
+      if (!response.user_input && response.selected_options.length === 0 && response.images.length === 0) {
+        response.user_input = '用户确认继续'
+      }
+
+      if (props.mockMode) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        message.success('模拟响应发送成功')
+      }
+      else {
+        await invoke('send_mcp_response', { response })
+        await invoke('exit_app')
+      }
+
+      emit('response', response)
+    }
   }
   catch (error) {
-    console.error('提交响应失败:', error)
+    console.error('提交失败:', error)
     message.error('提交失败，请重试')
   }
   finally {
     submitting.value = false
   }
+}
+
+// 处理发送目标切换
+function handleToggleSendTarget(target: 'ide' | 'browser') {
+  sendTarget.value = target
 }
 
 // 处理输入更新
@@ -427,7 +454,7 @@ Here is my original instruction:
     <div class="flex-1 overflow-y-auto scrollbar-thin">
       <!-- 消息内容 - 允许选中 -->
       <div class="mx-2 mt-2 mb-1 px-4 py-3 bg-black-100 rounded-lg select-text" data-guide="popup-content">
-        <PopupContent :request="request" :loading="loading" :current-theme="props.appConfig.theme" @quote-message="handleQuoteMessage" />
+        <PopupContent :request="request" :loading="loading" :current-theme="props.appConfig.theme" @quote-message="handleQuoteMessage" @toggle-send-target="handleToggleSendTarget" />
       </div>
 
       <!-- 输入和选项 - 允许选中 -->

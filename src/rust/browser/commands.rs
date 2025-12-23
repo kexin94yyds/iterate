@@ -2,7 +2,7 @@ use tauri::{AppHandle, Emitter};
 use serde::{Deserialize, Serialize};
 
 use super::detector::AiCompletionEvent;
-use super::websocket::{start_ws_server, stop_ws_server};
+use super::websocket::{start_ws_server, stop_ws_server, send_to_browser};
 use crate::mcp::handlers::create_tauri_popup;
 use crate::mcp::types::PopupRequest;
 use crate::mcp::utils::generate_request_id;
@@ -32,15 +32,31 @@ pub async fn start_browser_monitoring(
                             // 发送事件到前端显示在列表中
                             let _ = app_handle.emit("browser-ai-completed", &event);
                             
+                            // 构建弹窗消息
+                            let mut message = if event.image_generated {
+                                format!("## 🖼️ {} 图片生成完成", event.site_name)
+                            } else {
+                                format!("## {} AI 完成", event.site_name)
+                            };
+                            
+                            message.push_str(&format!("\n\n**标题**: {}", event.title));
+                            
+                            if let Some(run_time) = event.run_time {
+                                message.push_str(&format!("\n**运行时间**: {}秒", run_time));
+                            }
+                            if let Some(think_time) = event.think_time {
+                                message.push_str(&format!("\n**思考时间**: {}秒", think_time));
+                            }
+                            if let Some(new_images) = event.new_images {
+                                message.push_str(&format!("\n**新图片**: {}张", new_images));
+                            }
+                            
                             // 创建弹窗通知（像 cunzhi 那样）- 在独立线程中运行避免阻塞
                             let popup_request = PopupRequest {
                                 id: generate_request_id(),
-                                message: format!(
-                                    "## {} AI 完成\n\n**标题**: {}",
-                                    event.site_name, event.title
-                                ),
+                                message,
                                 predefined_options: Some(vec![
-                                    "打开聊天页面".to_string(),
+                                    "打开页面".to_string(),
                                     "忽略".to_string(),
                                 ]),
                                 is_markdown: true,
@@ -132,4 +148,20 @@ pub async fn show_ai_completion_popup(
     // 发送到前端显示弹窗
     app.emit("show-ai-completion-popup", &event)
         .map_err(|e| format!("发送弹窗事件失败: {}", e))
+}
+
+/// 发送消息到浏览器 AI
+#[tauri::command]
+pub async fn send_message_to_browser_ai(message: String) -> Result<String, String> {
+    log::info!("[DEBUG] send_message_to_browser_ai 命令被调用, message: {}", message);
+    match send_to_browser(message).await {
+        Ok(_) => {
+            log::info!("[DEBUG] 消息发送成功");
+            Ok("消息已发送".to_string())
+        }
+        Err(e) => {
+            log::error!("[DEBUG] 消息发送失败: {}", e);
+            Err(format!("发送失败: {}", e))
+        }
+    }
 }

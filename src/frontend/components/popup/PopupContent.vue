@@ -3,7 +3,7 @@ import type { McpRequest } from '../../types/popup'
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
 import { useMessage } from 'naive-ui'
-import { nextTick, onMounted, onUpdated, watch } from 'vue'
+import { nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
@@ -76,7 +76,26 @@ interface Props {
 
 interface Emits {
   quoteMessage: [message: string]
+  toggleSendTarget: [target: 'ide' | 'browser']
 }
+
+// 发送目标切换状态（从 localStorage 读取持久化设置）
+const SEND_TARGET_KEY = 'iterate_send_target'
+const savedTarget = localStorage.getItem(SEND_TARGET_KEY) as 'ide' | 'browser' | null
+const sendTarget = ref<'ide' | 'browser'>(savedTarget || 'ide')
+
+function setSendTarget(target: 'ide' | 'browser') {
+  sendTarget.value = target
+  localStorage.setItem(SEND_TARGET_KEY, target)
+  emit('toggleSendTarget', target)
+}
+
+// 初始化时通知父组件当前状态
+onMounted(() => {
+  if (savedTarget) {
+    emit('toggleSendTarget', savedTarget)
+  }
+})
 
 const message = useMessage()
 
@@ -355,23 +374,48 @@ onUpdated(() => {
         {{ request.message }}
       </div>
 
-      <!-- 引用原文和复制原文按钮 - 位于右下角 -->
-      <div class="flex justify-between mt-4 pt-3 border-t border-gray-600/30" data-guide="quote-message">
-        <div
-          title="点击复制AI的消息内容到剪贴板"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
-          @click="copyMessage"
-        >
-          <div class="i-carbon-copy w-3.5 h-3.5" />
-          <span>复制原文</span>
+      <!-- 操作按钮区域 -->
+      <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-600/30" data-guide="quote-message">
+        <!-- 左侧：发送目标切换（两个按钮） -->
+        <div class="inline-flex rounded-md overflow-hidden border border-gray-500/50">
+          <div
+            title="发送到 IDE"
+            class="flex items-center gap-1 px-2.5 py-1 text-xs font-medium cursor-pointer transition-all duration-200"
+            :class="sendTarget === 'ide' ? 'bg-gray-600 text-white' : 'bg-transparent text-gray-400 hover:bg-gray-700/50'"
+            @click="setSendTarget('ide')"
+          >
+            <div class="i-carbon-terminal w-3 h-3" />
+            <span>IDE</span>
+          </div>
+          <div
+            title="发送到浏览器 AI"
+            class="flex items-center gap-1 px-2.5 py-1 text-xs font-medium cursor-pointer transition-all duration-200"
+            :class="sendTarget === 'browser' ? 'bg-gray-600 text-white' : 'bg-transparent text-gray-400 hover:bg-gray-700/50'"
+            @click="setSendTarget('browser')"
+          >
+            <div class="i-carbon-globe w-3 h-3" />
+            <span>Web</span>
+          </div>
         </div>
-        <div
-          title="点击将AI的消息内容引用到输入框中"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
-          @click="quoteMessage"
-        >
-          <div class="i-carbon-quotes w-3.5 h-3.5" />
-          <span>引用原文</span>
+
+        <!-- 右侧：复制和引用按钮 -->
+        <div class="flex gap-2">
+          <div
+            title="点击复制AI的消息内容到剪贴板"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
+            @click="copyMessage"
+          >
+            <div class="i-carbon-copy w-3.5 h-3.5" />
+            <span>复制原文</span>
+          </div>
+          <div
+            title="点击将AI的消息内容引用到输入框中"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
+            @click="quoteMessage"
+          >
+            <div class="i-carbon-quotes w-3.5 h-3.5" />
+            <span>引用原文</span>
+          </div>
         </div>
       </div>
     </div>
