@@ -61,6 +61,11 @@ hex = "0.4"
 ignore = "0.4"
 encoding_rs = "0.8"
 globset = "0.4"
+# 浏览器 CDP 监控
+chromiumoxide = { version = "0.7", features = ["tokio-runtime"], default-features = false }
+futures = "0.3"
+once_cell = "1.19"
+tokio-tungstenite = "0.21"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }

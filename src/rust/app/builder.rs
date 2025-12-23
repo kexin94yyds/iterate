@@ -126,7 +126,14 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
             check_for_updates,
             download_and_install_update,
             get_current_version,
-            restart_app
+            restart_app,
+
+            // 浏览器监控命令
+            crate::browser::start_browser_monitoring,
+            crate::browser::stop_browser_monitoring,
+            crate::browser::get_browser_monitor_status,
+            crate::browser::open_browser_url,
+            crate::browser::show_ai_completion_popup
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

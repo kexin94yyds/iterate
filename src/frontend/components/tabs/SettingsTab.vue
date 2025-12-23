@@ -4,6 +4,7 @@ import { listen } from '@tauri-apps/api/event'
 import { useMessage } from 'naive-ui'
 import { onMounted, onUnmounted, ref } from 'vue'
 import AudioSettings from '../settings/AudioSettings.vue'
+import BrowserSettings from '../settings/BrowserSettings.vue'
 import CustomPromptSettings from '../settings/CustomPromptSettings.vue'
 import FontSettings from '../settings/FontSettings.vue'
 import ReplySettings from '../settings/ReplySettings.vue'
@@ -240,6 +241,30 @@ function handleWindowSizeUpdate(size: { width: number, height: number, fixed: bo
             @stop-audio="$emit('stopAudio')"
             @test-audio-error="$emit('testAudioError', $event)"
           />
+        </div>
+      </n-collapse-item>
+
+      <!-- 浏览器监控 -->
+      <n-collapse-item name="browser">
+        <template #header>
+          <div class="flex items-center justify-between w-full">
+            <div class="flex items-center">
+              <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center mr-4">
+                <div class="i-carbon-globe text-lg text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <div class="text-lg font-medium tracking-tight mb-1">
+                  浏览器监控
+                </div>
+                <div class="text-sm opacity-60 font-normal">
+                  监控 ChatGPT/Gemini 等 AI 完成通知
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div class="setting-content">
+          <BrowserSettings />
         </div>
       </n-collapse-item>
 

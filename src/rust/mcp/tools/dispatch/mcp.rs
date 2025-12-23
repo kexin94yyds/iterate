@@ -123,6 +123,8 @@ impl DispatchTool {
             ]),
             is_markdown: true,
             project_path: None,
+            link_url: None,
+            link_title: None,
         };
 
         match create_tauri_popup(&popup_request) {

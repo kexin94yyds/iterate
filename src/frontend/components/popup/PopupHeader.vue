@@ -8,6 +8,8 @@ interface Props {
   showMainLayout?: boolean
   alwaysOnTop?: boolean
   projectPath?: string
+  linkUrl?: string
+  linkTitle?: string
 }
 
 interface Emits {
@@ -54,13 +56,23 @@ function handleNewChat() {
 <template>
   <div class="px-4 py-3 select-none">
     <div class="flex items-center justify-between">
-      <!-- 左侧：标题和项目路径 -->
+      <!-- 左侧：标题和项目路径/链接 -->
       <div class="flex items-center gap-3 min-w-0 flex-1">
         <span class="text-lg font-bold text-primary-500 flex-shrink-0">∞</span>
         <h1 class="text-base font-medium text-white flex-shrink-0">
           iterate
         </h1>
-        <span v-if="displayProjectPath" class="text-sm text-gray-400 truncate" :title="displayProjectPath">
+        <!-- 链接标题 (cmd+点击打开) -->
+        <a
+          v-if="props.linkUrl"
+          :href="props.linkUrl"
+          target="_blank"
+          class="text-sm text-primary-400 hover:text-primary-300 truncate cursor-pointer"
+          :title="`${props.linkTitle || props.linkUrl}\n(Cmd+点击打开)`"
+        >
+          {{ props.linkTitle || props.linkUrl }}
+        </a>
+        <span v-else-if="displayProjectPath" class="text-sm text-gray-400 truncate" :title="displayProjectPath">
           / {{ displayProjectPath }}
         </span>
       </div>

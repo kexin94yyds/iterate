@@ -94,6 +94,10 @@ pub struct PopupRequest {
     pub predefined_options: Option<Vec<String>>,
     pub is_markdown: bool,
     pub project_path: Option<String>,
+    #[serde(default)]
+    pub link_url: Option<String>,
+    #[serde(default)]
+    pub link_title: Option<String>,
 }
 
 /// 新的结构化响应数据格式
