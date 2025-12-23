@@ -2,6 +2,7 @@
 import type { McpRequest } from '../../types/popup'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useMessage } from 'naive-ui'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -331,6 +332,39 @@ function handleQuoteMessage(messageContent: string) {
   }
 }
 
+// 发送消息到浏览器 AI
+async function handleSendToBrowser() {
+  if (!canSubmit.value || submitting.value)
+    return
+
+  submitting.value = true
+
+  try {
+    const messageText = userInput.value.trim()
+    if (!messageText) {
+      message.warning('请输入要发送的消息')
+      return
+    }
+
+    await invoke('send_message_to_browser_ai', { message: messageText })
+    message.success('消息已发送到浏览器 AI')
+
+    // 清空输入并关闭窗口
+    userInput.value = ''
+    setTimeout(async () => {
+      const window = getCurrentWindow()
+      await window.close()
+    }, 300)
+  }
+  catch (error) {
+    console.error('发送到浏览器失败:', error)
+    message.error('发送失败: ' + String(error))
+  }
+  finally {
+    submitting.value = false
+  }
+}
+
 // 处理增强按钮点击
 async function handleEnhance() {
   if (submitting.value)
@@ -411,6 +445,7 @@ Here is my original instruction:
         :request="request" :loading="loading" :submitting="submitting" :can-submit="canSubmit"
         :continue-reply-enabled="continueReplyEnabled" :input-status-text="inputStatusText"
         @submit="handleSubmit" @continue="handleContinue" @enhance="handleEnhance"
+        @send-to-browser="handleSendToBrowser"
       />
     </div>
   </div>
