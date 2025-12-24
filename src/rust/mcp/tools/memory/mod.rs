@@ -5,6 +5,7 @@
 pub mod manager;
 pub mod types;
 pub mod mcp;
+pub mod commands;
 
 // 重新导出主要类型和功能
 pub use manager::MemoryManager;

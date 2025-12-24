@@ -91,6 +91,19 @@ pub async fn get_mcp_tools_config(state: State<'_, AppState>) -> Result<Vec<MCPT
         dark_icon_bg: "dark:bg-cyan-800".to_string(),
         has_config: false, // 经验查找工具暂无配置选项
     });
+
+    // 提示词库搜索工具 - 始终存在，无配置选项
+    tools.push(MCPToolConfig {
+        id: mcp::TOOL_CI.to_string(),
+        name: "提示词库".to_string(),
+        description: "提示词库搜索工具。在 .cunzhi-knowledge/prompts/ 中搜索相关模板。".to_string(),
+        enabled: config.mcp_config.tools.get(mcp::TOOL_CI).copied().unwrap_or(false),
+        can_disable: true,
+        icon: "i-carbon-document-attachment text-lg text-indigo-600 dark:text-indigo-400".to_string(),
+        icon_bg: "bg-indigo-100 dark:bg-indigo-900".to_string(),
+        dark_icon_bg: "dark:bg-indigo-800".to_string(),
+        has_config: false, // 提示词库工具暂无配置选项
+    });
     
     // 按启用状态排序，启用的在前
     tools.sort_by(|a, b| b.enabled.cmp(&a.enabled));

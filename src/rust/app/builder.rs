@@ -84,6 +84,10 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
             crate::mcp::tools::acemcp::commands::debug_acemcp_search,
             crate::mcp::tools::acemcp::commands::execute_acemcp_tool,
 
+            crate::mcp::tools::ci::commands::execute_ci_tool,
+            crate::mcp::tools::xi::commands::execute_xi_tool,
+            crate::mcp::tools::memory::commands::execute_ji_tool,
+
             // 自定义prompt命令
             get_custom_prompt_config,
             add_custom_prompt,

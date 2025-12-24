@@ -10,6 +10,26 @@ use crate::mcp::handlers::create_tauri_popup;
 use crate::mcp::types::PopupRequest;
 use crate::mcp::utils::generate_request_id;
 
+fn is_closing_text(text: &str) -> bool {
+    let t = text.to_lowercase();
+    let patterns = [
+        "还有什么需要帮助",
+        "还有什么可以帮",
+        "如果你还有",
+        "如有需要",
+        "希望能帮到",
+        "到这里",
+        "就到这",
+        "告一段落",
+        "wrap up",
+        "in summary",
+        "hope this helps",
+        "anything else",
+        "let me know if",
+    ];
+    patterns.iter().any(|p| t.contains(p))
+}
+
 /// 存储最新的 AI 回复
 static LATEST_AI_RESPONSE: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 
@@ -70,6 +90,7 @@ pub async fn start_browser_monitoring(
                                 id: generate_request_id(),
                                 message,
                                 predefined_options: Some(vec![
+                                    "继续".to_string(),
                                     "打开页面".to_string(),
                                     "忽略".to_string(),
                                 ]),
@@ -81,15 +102,39 @@ pub async fn start_browser_monitoring(
                             };
                             
                             let url = event.url.clone();
-                            // 使用独立线程处理弹窗，不阻塞事件循环
-                            std::thread::spawn(move || {
-                                if let Ok(response) = create_tauri_popup(&popup_request) {
-                                    if response.contains("打开") {
-                                        #[cfg(target_os = "macos")]
-                                        {
-                                            let _ = std::process::Command::new("open").arg(&url).spawn();
-                                        }
+                            let should_offer_continue = is_closing_text(&event.message_preview);
+                            tokio::spawn(async move {
+                                let popup_request = if should_offer_continue {
+                                    popup_request
+                                } else {
+                                    PopupRequest {
+                                        predefined_options: Some(vec![
+                                            "打开页面".to_string(),
+                                            "忽略".to_string(),
+                                        ]),
+                                        ..popup_request
                                     }
+                                };
+
+                                let popup_result = tokio::task::spawn_blocking(move || create_tauri_popup(&popup_request)).await;
+                                let response = match popup_result {
+                                    Ok(Ok(r)) => r,
+                                    _ => return,
+                                };
+
+                                if response.contains("打开") {
+                                    #[cfg(target_os = "macos")]
+                                    {
+                                        let _ = std::process::Command::new("open").arg(&url).spawn();
+                                    }
+                                    return;
+                                }
+
+                                if should_offer_continue && response.contains("继续") {
+                                    let continue_prompt = crate::config::load_standalone_config()
+                                        .map(|c| c.reply_config.continue_prompt)
+                                        .unwrap_or_else(|_| "请按照最佳实践继续".to_string());
+                                    let _ = send_to_browser(continue_prompt).await;
                                 }
                             });
                         }
