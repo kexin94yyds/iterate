@@ -38,15 +38,6 @@ function preprocessQuoteContent(content: string): string {
   return processedContent
 }
 
-// 引用消息内容
-function quoteMessage() {
-  if (props.request?.message) {
-    // 预处理内容，移除增强prompt格式标记
-    const processedContent = preprocessQuoteContent(props.request.message)
-    emit('quoteMessage', processedContent)
-  }
-}
-
 // 动态导入代码高亮样式，根据主题切换
 
 // 动态加载代码高亮样式
@@ -105,7 +96,18 @@ const message = useMessage()
 
 // 复制原文到剪贴板
 async function copyMessage() {
-  if (props.request?.message) {
+  // Web 模式下优先复制 AI 回复内容
+  if (sendTarget.value === 'browser' && localBrowserAiResponse.value) {
+    try {
+      await navigator.clipboard.writeText(localBrowserAiResponse.value)
+      message.success('AI 回复已复制到剪贴板')
+    }
+    catch {
+      message.error('复制失败')
+    }
+  }
+  else if (props.request?.message) {
+    // IDE 模式下复制原消息
     try {
       const processedContent = preprocessQuoteContent(props.request.message)
       await navigator.clipboard.writeText(processedContent)
@@ -114,6 +116,19 @@ async function copyMessage() {
     catch {
       message.error('复制失败')
     }
+  }
+}
+
+// 引用消息内容
+function quoteMessage() {
+  // Web 模式下优先引用 AI 回复内容
+  if (sendTarget.value === 'browser' && localBrowserAiResponse.value) {
+    emit('quoteMessage', localBrowserAiResponse.value)
+  }
+  else if (props.request?.message) {
+    // IDE 模式下引用原消息
+    const processedContent = preprocessQuoteContent(props.request.message)
+    emit('quoteMessage', processedContent)
   }
 }
 
