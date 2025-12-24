@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { McpRequest } from '../../types/popup'
+import { invoke } from '@tauri-apps/api/core'
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
 import { useMessage } from 'naive-ui'
@@ -129,6 +130,17 @@ function quoteMessage() {
     // IDE 模式下引用原消息
     const processedContent = preprocessQuoteContent(props.request.message)
     emit('quoteMessage', processedContent)
+  }
+}
+
+// 打开终端
+async function openTerminal() {
+  try {
+    await invoke('open_terminal')
+  }
+  catch (error) {
+    console.error('打开终端失败:', error)
+    message.error('打开终端失败')
   }
 }
 
@@ -412,7 +424,7 @@ onUpdated(() => {
 
       <!-- 操作按钮区域 -->
       <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-600/30" data-guide="quote-message">
-        <!-- 左侧：发送目标切换（两个按钮） -->
+        <!-- 左侧：发送目标切换 + 终端按钮 -->
         <div class="inline-flex rounded-md overflow-hidden border border-gray-500/30 bg-black-200">
           <div
             title="发送到 IDE"
@@ -420,7 +432,7 @@ onUpdated(() => {
             :class="sendTarget === 'ide' ? 'is-active text-black' : 'bg-transparent text-gray-400 hover:text-gray-200'"
             @click="setSendTarget('ide')"
           >
-            <div class="i-carbon-terminal w-3.5 h-3.5" />
+            <div class="i-carbon-code w-3.5 h-3.5" />
             <span>IDE</span>
           </div>
           <div
@@ -431,6 +443,13 @@ onUpdated(() => {
           >
             <div class="i-carbon-globe w-3.5 h-3.5" />
             <span>Web</span>
+          </div>
+          <div
+            title="打开终端"
+            class="custom-recessed-button flex items-center gap-1 px-3 py-1.5 text-xs font-medium cursor-pointer transition-all duration-100 border-l border-gray-500/30 bg-transparent text-gray-400 hover:text-gray-200"
+            @click="openTerminal"
+          >
+            <div class="i-carbon-terminal w-3.5 h-3.5" />
           </div>
         </div>
 

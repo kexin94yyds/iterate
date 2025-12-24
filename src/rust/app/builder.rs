@@ -121,6 +121,7 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
 
             // 系统命令
             open_external_url,
+            open_terminal,
             exit_app,
             handle_app_exit_request,
             force_exit_app,

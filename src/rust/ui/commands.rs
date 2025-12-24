@@ -1006,3 +1006,46 @@ pub async fn activate_window_instance(pid: u32) -> Result<(), String> {
 pub fn debug_log(message: String) {
     println!("[DEBUG] {}", message);
 }
+
+/// 打开系统终端
+#[tauri::command]
+pub async fn open_terminal() -> Result<(), String> {
+    use std::process::Command;
+
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: 打开 Terminal.app
+        Command::new("open")
+            .arg("-a")
+            .arg("Terminal")
+            .spawn()
+            .map_err(|e| format!("打开终端失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: 打开 cmd 或 PowerShell
+        Command::new("cmd")
+            .args(["/C", "start", "cmd"])
+            .spawn()
+            .map_err(|e| format!("打开终端失败: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: 尝试打开常见终端
+        let terminals = ["gnome-terminal", "konsole", "xterm", "xfce4-terminal"];
+        let mut opened = false;
+        for terminal in terminals {
+            if Command::new(terminal).spawn().is_ok() {
+                opened = true;
+                break;
+            }
+        }
+        if !opened {
+            return Err("无法找到可用的终端程序".to_string());
+        }
+    }
+
+    Ok(())
+}
