@@ -128,6 +128,18 @@ watch(() => props.request, (newRequest) => {
     loading.value = true
     // 每次显示弹窗时重新加载配置
     loadReplyConfig()
+
+    // 自动检测来源并设置发送目标
+    // 如果请求中有 browser_ai_response，说明是从 Web 来的
+    if (newRequest.browser_ai_response) {
+      sendTarget.value = 'browser'
+      localStorage.setItem(SEND_TARGET_KEY, 'browser')
+    }
+    else {
+      sendTarget.value = 'ide'
+      localStorage.setItem(SEND_TARGET_KEY, 'ide')
+    }
+
     setTimeout(() => {
       loading.value = false
     }, 300)
@@ -438,7 +450,7 @@ async function handleSendToBrowser() {
   }
   catch (error) {
     console.error('发送到浏览器失败:', error)
-    message.error('发送失败: ' + String(error))
+    message.error(`发送失败: ${String(error)}`)
   }
   finally {
     submitting.value = false
