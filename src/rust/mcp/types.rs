@@ -98,6 +98,8 @@ pub struct PopupRequest {
     pub link_url: Option<String>,
     #[serde(default)]
     pub link_title: Option<String>,
+    #[serde(default)]
+    pub browser_ai_response: Option<String>,
 }
 
 /// 新的结构化响应数据格式

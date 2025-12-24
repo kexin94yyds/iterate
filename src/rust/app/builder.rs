@@ -134,7 +134,8 @@ pub fn build_tauri_app() -> Builder<tauri::Wry> {
             crate::browser::get_browser_monitor_status,
             crate::browser::open_browser_url,
             crate::browser::send_message_to_browser_ai,
-            crate::browser::show_ai_completion_popup
+            crate::browser::show_ai_completion_popup,
+            crate::browser::get_latest_ai_response
         ])
         .setup(|app| {
             let app_handle = app.handle().clone();

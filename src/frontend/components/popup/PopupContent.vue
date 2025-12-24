@@ -3,7 +3,7 @@ import type { McpRequest } from '../../types/popup'
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
 import { useMessage } from 'naive-ui'
-import { nextTick, onMounted, onUpdated, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUpdated, ref, watch } from 'vue'
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
@@ -72,6 +72,7 @@ interface Props {
   request: McpRequest | null
   loading?: boolean
   currentTheme?: string
+  browserAiResponse?: string | null
 }
 
 interface Emits {
@@ -83,6 +84,9 @@ interface Emits {
 const SEND_TARGET_KEY = 'iterate_send_target'
 const savedTarget = localStorage.getItem(SEND_TARGET_KEY) as 'ide' | 'browser' | null
 const sendTarget = ref<'ide' | 'browser'>(savedTarget || 'ide')
+
+// 本地的浏览器 AI 回复状态（直接从 props.request 获取）
+const localBrowserAiResponse = computed(() => props.request?.browser_ai_response || null)
 
 function setSendTarget(target: 'ide' | 'browser') {
   sendTarget.value = target
@@ -372,6 +376,17 @@ onUpdated(() => {
       />
       <div v-else class="whitespace-pre-wrap leading-relaxed text-white">
         {{ request.message }}
+      </div>
+
+      <!-- 浏览器 AI 回复（Web 模式下显示） -->
+      <div v-if="localBrowserAiResponse" class="mt-3 px-3 py-2.5 bg-orange-900/20 border border-orange-500/30 rounded-lg">
+        <div class="flex items-center gap-2 mb-1.5 text-orange-400 text-xs font-medium">
+          <div class="i-carbon-globe w-3.5 h-3.5" />
+          <span>浏览器 AI 回复</span>
+        </div>
+        <div class="text-white/90 text-sm whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto">
+          {{ localBrowserAiResponse }}
+        </div>
       </div>
 
       <!-- 操作按钮区域 -->

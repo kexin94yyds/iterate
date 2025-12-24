@@ -100,12 +100,15 @@ function sendToIterate(data) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'AI_COMPLETED') {
     console.log('[Iterate] AI 完成:', message.data)
+    console.log('[Iterate] aiResponse 长度:', message.data?.aiResponse?.length)
 
     // 发送到 iterate 应用
-    const sent = sendToIterate({
+    const dataToSend = {
       type: 'ai_completed',
       ...message.data,
-    })
+    }
+    console.log('[Iterate] 发送数据:', JSON.stringify(dataToSend).substring(0, 200))
+    const sent = sendToIterate(dataToSend)
 
     // 如果 WebSocket 未连接，显示浏览器通知
     if (!sent) {

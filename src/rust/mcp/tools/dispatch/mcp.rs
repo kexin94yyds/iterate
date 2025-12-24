@@ -125,6 +125,7 @@ impl DispatchTool {
             project_path: None,
             link_url: None,
             link_title: None,
+            browser_ai_response: None,
         };
 
         match create_tauri_popup(&popup_request) {

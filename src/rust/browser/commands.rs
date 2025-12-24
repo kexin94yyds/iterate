@@ -1,11 +1,17 @@
 use tauri::{AppHandle, Emitter};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use tokio::sync::RwLock;
+use once_cell::sync::Lazy;
 
 use super::detector::AiCompletionEvent;
 use super::websocket::{start_ws_server, stop_ws_server, send_to_browser};
 use crate::mcp::handlers::create_tauri_popup;
 use crate::mcp::types::PopupRequest;
 use crate::mcp::utils::generate_request_id;
+
+/// 存储最新的 AI 回复
+static LATEST_AI_RESPONSE: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BrowserMonitorStatus {
@@ -29,6 +35,14 @@ pub async fn start_browser_monitoring(
                     match receiver.recv().await {
                         Ok(event) => {
                             log::info!("AI 完成事件: {} - {}", event.site_name, event.url);
+                            
+                            // 存储最新的 AI 回复
+                            if !event.message_preview.is_empty() {
+                                let mut latest = LATEST_AI_RESPONSE.write().await;
+                                *latest = Some(event.message_preview.clone());
+                                log::info!("已存储最新 AI 回复，长度: {}", event.message_preview.len());
+                            }
+                            
                             // 发送事件到前端显示在列表中
                             let _ = app_handle.emit("browser-ai-completed", &event);
                             
@@ -63,6 +77,7 @@ pub async fn start_browser_monitoring(
                                 project_path: None,
                                 link_url: Some(event.url.clone()),
                                 link_title: Some(event.title.clone()),
+                                browser_ai_response: if event.message_preview.is_empty() { None } else { Some(event.message_preview.clone()) },
                             };
                             
                             let url = event.url.clone();
@@ -164,4 +179,13 @@ pub async fn send_message_to_browser_ai(message: String) -> Result<String, Strin
             Err(format!("发送失败: {}", e))
         }
     }
+}
+
+/// 获取最新的浏览器 AI 回复
+#[tauri::command]
+pub async fn get_latest_ai_response() -> Result<Option<String>, String> {
+    log::info!("[get_latest_ai_response] 命令被调用");
+    let latest = LATEST_AI_RESPONSE.read().await;
+    log::info!("[get_latest_ai_response] 返回值: {:?}", latest.as_ref().map(|s| s.len()));
+    Ok(latest.clone())
 }

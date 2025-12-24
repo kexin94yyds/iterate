@@ -8,6 +8,7 @@ export interface McpRequest {
   project_path?: string
   link_url?: string
   link_title?: string
+  browser_ai_response?: string
 }
 
 // 自定义prompt类型定义

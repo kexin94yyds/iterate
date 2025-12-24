@@ -31,6 +31,7 @@ impl InteractionTool {
             project_path: request.project_path,
             link_url: None,
             link_title: None,
+            browser_ai_response: None,
         };
 
         match create_tauri_popup(&popup_request) {

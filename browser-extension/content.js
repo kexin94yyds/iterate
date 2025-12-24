@@ -119,7 +119,11 @@ if (!config) {
       console.log('[iterate] ⚠️ 扩展上下文已失效，请刷新页面')
       return
     }
-    
+
+    // 获取 AI 回复内容
+    const aiResponse = getLatestAIResponse()
+    console.log('[iterate] 🔍 aiResponse 类型:', typeof aiResponse, '值:', aiResponse ? aiResponse.substring(0, 50) : 'null')
+
     const message = {
       type: 'AI_COMPLETED',
       data: {
@@ -127,16 +131,65 @@ if (!config) {
         url: window.location.href,
         title: document.title,
         timestamp: new Date().toISOString(),
+        aiResponse: aiResponse || '', // 确保不是 null
         ...extra,
       },
     }
-    console.log('[iterate] ✅ AI 完成! 发送通知...', extra)
-    
+    console.log('[iterate] ✅ AI 完成! 发送通知...', 'AI回复长度:', aiResponse?.length, 'message.data.aiResponse长度:', message.data.aiResponse?.length)
+
     try {
       chrome.runtime.sendMessage(message)
     } catch (e) {
       console.log('[iterate] ⚠️ 发送消息失败，请刷新页面:', e.message)
     }
+  }
+
+  // 获取最新的 AI 回复内容（提前定义）
+  function getLatestAIResponse() {
+    // ChatGPT 特殊处理：获取最后一个 assistant 消息中的 markdown 内容
+    if (hostname === 'chatgpt.com' || hostname === 'chat.openai.com') {
+      // 方法1：通过 data-message-author-role 找到 assistant 消息
+      const assistantMessages = document.querySelectorAll('[data-message-author-role="assistant"]')
+      if (assistantMessages.length > 0) {
+        const lastMsg = assistantMessages[assistantMessages.length - 1]
+        // 找到其中的 markdown 内容
+        const markdown = lastMsg.querySelector('.markdown') || lastMsg
+        const content = markdown.textContent
+        console.log('[iterate] 📖 ChatGPT 获取到 AI 回复，长度:', content?.length)
+        return content?.trim() || null
+      }
+      // 方法2：通过 agent-turn 类
+      const agentTurns = document.querySelectorAll('.agent-turn .markdown')
+      if (agentTurns.length > 0) {
+        const content = agentTurns[agentTurns.length - 1].textContent
+        console.log('[iterate] 📖 ChatGPT agent-turn 获取到 AI 回复，长度:', content?.length)
+        return content?.trim() || null
+      }
+    }
+
+    const responseSelectors = {
+      'gemini.google.com': '.model-response-text, .response-content',
+      'aistudio.google.com': '.response-container, .model-response',
+      'claude.ai': '[data-testid="assistant-message"], .assistant-message',
+      'chat.deepseek.com': '.assistant-message, .ai-response',
+      'kimi.moonshot.cn': '.assistant-message',
+      'tongyi.aliyun.com': '.assistant-message',
+      'www.doubao.com': '.assistant-message',
+    }
+
+    const selector = responseSelectors[hostname] || '.assistant-message, .ai-response, .model-response'
+    const responses = document.querySelectorAll(selector)
+
+    if (responses.length === 0) {
+      console.log('[iterate] ⚠️ 找不到 AI 回复')
+      return null
+    }
+
+    // 获取最后一个回复
+    const lastResponse = responses[responses.length - 1]
+    const content = lastResponse.textContent
+    console.log('[iterate] 📖 获取到 AI 回复，长度:', content?.length)
+    return content?.trim() || null
   }
 
   // 主检测循环
@@ -300,35 +353,6 @@ if (!config) {
       return true
     }
     return false
-  }
-
-  // 获取最新的 AI 回复内容
-  function getLatestAIResponse() {
-    const responseSelectors = {
-      'chatgpt.com': '[data-message-author-role="assistant"] .markdown',
-      'chat.openai.com': '[data-message-author-role="assistant"] .markdown',
-      'gemini.google.com': '.model-response-text, .response-content',
-      'aistudio.google.com': '.response-container, .model-response',
-      'claude.ai': '[data-testid="assistant-message"], .assistant-message',
-      'chat.deepseek.com': '.assistant-message, .ai-response',
-      'kimi.moonshot.cn': '.assistant-message',
-      'tongyi.aliyun.com': '.assistant-message',
-      'www.doubao.com': '.assistant-message',
-    }
-
-    const selector = responseSelectors[hostname] || '.assistant-message, .ai-response, .model-response'
-    const responses = document.querySelectorAll(selector)
-
-    if (responses.length === 0) {
-      console.log('[iterate] ⚠️ 找不到 AI 回复')
-      return null
-    }
-
-    // 获取最后一个回复
-    const lastResponse = responses[responses.length - 1]
-    const content = lastResponse.textContent
-    console.log('[iterate] 📖 获取到 AI 回复，长度:', content?.length)
-    return content?.trim() || null
   }
 
   // 监听来自 background 的获取回复请求

@@ -76,6 +76,10 @@ const SEND_TARGET_KEY = 'iterate_send_target'
 const savedTarget = localStorage.getItem(SEND_TARGET_KEY) as 'ide' | 'browser' | null
 const sendTarget = ref<'ide' | 'browser'>(savedTarget || 'ide')
 
+// 浏览器 AI 回复内容
+const browserAiResponse = ref<string | null>(null)
+let unlistenBrowserAi: (() => void) | null = null
+
 // 计算属性
 const isVisible = computed(() => !!props.request)
 const hasOptions = computed(() => (props.request?.predefined_options?.length ?? 0) > 0)
@@ -199,16 +203,65 @@ function handleTextUpdate(text: string) {
   }
 }
 
+// 设置浏览器 AI 回复监听
+async function setupBrowserAiListener() {
+  try {
+    console.log('[McpPopup] 开始设置浏览器 AI 监听...')
+    unlistenBrowserAi = await listen('browser-ai-completed', (event) => {
+      console.log('[McpPopup] 收到 browser-ai-completed 事件:', event)
+      console.log('[McpPopup] event.payload:', event.payload)
+      const payload = event.payload as { message_preview?: string }
+      if (payload.message_preview) {
+        console.log('[McpPopup] 收到浏览器 AI 回复，长度:', payload.message_preview.length)
+        browserAiResponse.value = payload.message_preview
+      }
+      else {
+        console.log('[McpPopup] message_preview 为空或不存在')
+      }
+    })
+    console.log('[McpPopup] 浏览器 AI 监听设置完成')
+  }
+  catch (error) {
+    console.error('设置浏览器 AI 监听失败:', error)
+  }
+}
+
+// 获取最新的 AI 回复（弹窗打开时）
+async function fetchLatestAiResponse() {
+  console.log('[McpPopup] === fetchLatestAiResponse 开始 ===')
+  try {
+    console.log('[McpPopup] 调用 invoke get_latest_ai_response...')
+    const response = await invoke<string | null>('get_latest_ai_response')
+    console.log('[McpPopup] invoke 返回:', typeof response, response ? `长度${response.length}` : 'null/undefined')
+    if (response) {
+      browserAiResponse.value = response
+      console.log('[McpPopup] browserAiResponse 已设置, 值:', browserAiResponse.value?.substring(0, 30))
+    }
+    else {
+      console.log('[McpPopup] response 为空，不设置 browserAiResponse')
+    }
+  }
+  catch (error) {
+    console.error('[McpPopup] invoke 失败:', error)
+  }
+  console.log('[McpPopup] === fetchLatestAiResponse 结束 ===')
+}
+
 // 组件挂载时设置监听器和加载配置
-onMounted(() => {
+onMounted(async () => {
   loadReplyConfig()
   setupTelegramListener()
+  setupBrowserAiListener()
+  await fetchLatestAiResponse()
 })
 
 // 组件卸载时清理监听器
 onUnmounted(() => {
   if (telegramUnlisten) {
     telegramUnlisten()
+  }
+  if (unlistenBrowserAi) {
+    unlistenBrowserAi()
   }
 })
 
@@ -454,7 +507,7 @@ Here is my original instruction:
     <div class="flex-1 overflow-y-auto scrollbar-thin">
       <!-- 消息内容 - 允许选中 -->
       <div class="mx-2 mt-2 mb-1 px-4 py-3 bg-black-100 rounded-lg select-text" data-guide="popup-content">
-        <PopupContent :request="request" :loading="loading" :current-theme="props.appConfig.theme" @quote-message="handleQuoteMessage" @toggle-send-target="handleToggleSendTarget" />
+        <PopupContent :request="request" :loading="loading" :current-theme="props.appConfig.theme" :browser-ai-response="browserAiResponse" @quote-message="handleQuoteMessage" @toggle-send-target="handleToggleSendTarget" />
       </div>
 
       <!-- 输入和选项 - 允许选中 -->

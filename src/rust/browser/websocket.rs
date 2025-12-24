@@ -183,18 +183,23 @@ async fn handle_connection(
                                         *tx = Some(browser_tx.clone());
                                     }
                                     
+                                    // 获取 AI 回复内容
+                                    log::info!("收到的完整数据: {:?}", data);
+                                    let ai_response = data.get("aiResponse").and_then(|v| v.as_str()).unwrap_or("").to_string();
+                                    log::info!("AI 回复内容长度: {}, 内容前100字符: {}", ai_response.len(), ai_response.chars().take(100).collect::<String>());
+
                                     let event = AiCompletionEvent {
                                         url: data.get("url").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                                         title: data.get("title").and_then(|v| v.as_str()).unwrap_or("").to_string(),
                                         site_name: data.get("siteName").and_then(|v| v.as_str()).unwrap_or("Unknown").to_string(),
-                                        message_preview: String::new(),
+                                        message_preview: ai_response, // 存储 AI 回复内容
                                         timestamp: chrono::Utc::now(),
                                         run_time: data.get("runTime").and_then(|v| v.as_u64()).map(|v| v as u32),
                                         think_time: data.get("thinkTime").and_then(|v| v.as_u64()).map(|v| v as u32),
                                         image_generated: data.get("imageGenerated").and_then(|v| v.as_bool()).unwrap_or(false),
                                         new_images: data.get("newImages").and_then(|v| v.as_u64()).map(|v| v as u32),
                                     };
-                                    
+
                                     log::info!("AI 完成事件: {} - {}", event.site_name, event.url);
                                     let _ = event_tx.send(event);
                                 }
