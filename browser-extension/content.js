@@ -212,7 +212,7 @@ if (!config) {
       // 延迟 1 秒后发送通知，确保 AI 回复内容已完全渲染
       setTimeout(() => {
         sendNotification(extra)
-      }, 1000)
+      }, 2500)
     }
 
     // 检测新图片生成完成 (AI Studio 图片生成)
