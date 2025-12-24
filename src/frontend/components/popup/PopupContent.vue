@@ -413,23 +413,23 @@ onUpdated(() => {
       <!-- 操作按钮区域 -->
       <div class="flex justify-between items-center mt-4 pt-3 border-t border-gray-600/30" data-guide="quote-message">
         <!-- 左侧：发送目标切换（两个按钮） -->
-        <div class="inline-flex rounded-md overflow-hidden border border-gray-500/50">
+        <div class="inline-flex rounded-md overflow-hidden border border-gray-500/30 bg-black-200">
           <div
             title="发送到 IDE"
-            class="flex items-center gap-1 px-2.5 py-1 text-xs font-medium cursor-pointer transition-all duration-200"
-            :class="sendTarget === 'ide' ? 'bg-gray-600 text-white' : 'bg-transparent text-gray-400 hover:bg-gray-700/50'"
+            class="custom-recessed-button flex items-center gap-1 px-3 py-1.5 text-xs font-medium cursor-pointer transition-all duration-100"
+            :class="sendTarget === 'ide' ? 'is-active text-black' : 'bg-transparent text-gray-400 hover:text-gray-200'"
             @click="setSendTarget('ide')"
           >
-            <div class="i-carbon-terminal w-3 h-3" />
+            <div class="i-carbon-terminal w-3.5 h-3.5" />
             <span>IDE</span>
           </div>
           <div
             title="发送到浏览器 AI"
-            class="flex items-center gap-1 px-2.5 py-1 text-xs font-medium cursor-pointer transition-all duration-200"
-            :class="sendTarget === 'browser' ? 'bg-gray-600 text-white' : 'bg-transparent text-gray-400 hover:bg-gray-700/50'"
+            class="custom-recessed-button flex items-center gap-1 px-3 py-1.5 text-xs font-medium cursor-pointer transition-all duration-100"
+            :class="sendTarget === 'browser' ? 'is-active text-black' : 'bg-transparent text-gray-400 hover:text-gray-200'"
             @click="setSendTarget('browser')"
           >
-            <div class="i-carbon-globe w-3 h-3" />
+            <div class="i-carbon-globe w-3.5 h-3.5" />
             <span>Web</span>
           </div>
         </div>
@@ -438,7 +438,7 @@ onUpdated(() => {
         <div class="flex gap-2">
           <div
             title="点击复制AI的消息内容到剪贴板"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
+            class="custom-recessed-button inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white rounded-md cursor-pointer border border-gray-500/30 bg-gray-800/50"
             @click="copyMessage"
           >
             <div class="i-carbon-copy w-3.5 h-3.5" />
@@ -446,7 +446,7 @@ onUpdated(() => {
           </div>
           <div
             title="点击将AI的消息内容引用到输入框中"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 hover:bg-blue-500/30 text-white rounded-md transition-all duration-200 cursor-pointer border border-blue-500/50 hover:border-blue-500/70 shadow-sm hover:shadow-md"
+            class="custom-recessed-button inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-300 hover:text-white rounded-md cursor-pointer border border-gray-500/30 bg-gray-800/50"
             @click="quoteMessage"
           >
             <div class="i-carbon-quotes w-3.5 h-3.5" />

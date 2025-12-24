@@ -645,7 +645,7 @@ defineExpose({
         <div
           v-for="(option, index) in request!.predefined_options"
           :key="`option-${index}`"
-          class="rounded-lg p-3 border border-gray-600 bg-gray-100 cursor-pointer hover:opacity-80 transition-opacity"
+          class="rounded-lg p-3 border border-gray-600 bg-container-secondary cursor-pointer transition-all duration-200"
           @click="handleOptionToggle(option)"
         >
           <n-checkbox
