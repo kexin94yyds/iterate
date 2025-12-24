@@ -6,11 +6,27 @@ use rmcp::{
     service::RequestContext,
 };
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::{Instant, Duration};
+use parking_lot::Mutex;
 
 use super::tools::{InteractionTool, MemoryTool, AcemcpTool, DispatchTool, XiTool, CiTool};
 use super::types::{ZhiRequest, JiyiRequest, PaiRequest, XiRequest, CiRequest};
 use crate::config::load_standalone_config;
 use crate::{log_important, log_debug};
+
+/// 需要 zhi 前置确认的工具（写入/危险操作）
+const TOOLS_REQUIRING_ZHI: &[&str] = &["ji", "pai"];
+
+/// zhi 授权有效期（秒）
+const ZHI_AUTH_TIMEOUT_SECS: u64 = 300; // 5 分钟
+
+/// 全局状态：记录最后一次 zhi 调用时间
+static ZHI_LAST_CALL: std::sync::OnceLock<Arc<Mutex<Option<Instant>>>> = std::sync::OnceLock::new();
+
+fn get_zhi_last_call() -> &'static Arc<Mutex<Option<Instant>>> {
+    ZHI_LAST_CALL.get_or_init(|| Arc::new(Mutex::new(None)))
+}
 
 #[derive(Clone)]
 pub struct ZhiServer {
@@ -277,6 +293,25 @@ impl ServerHandler for ZhiServer {
     ) -> Result<CallToolResult, McpError> {
         log_debug!("收到工具调用请求: {}", request.name);
 
+        // 守卫检查：需要 zhi 前置确认的工具
+        let tool_name = request.name.as_ref();
+        if TOOLS_REQUIRING_ZHI.contains(&tool_name) {
+            let last_call = get_zhi_last_call().lock();
+            let needs_zhi = match *last_call {
+                None => true, // 从未调用过 zhi
+                Some(instant) => instant.elapsed() > Duration::from_secs(ZHI_AUTH_TIMEOUT_SECS),
+            };
+            drop(last_call); // 释放锁
+            
+            if needs_zhi {
+                log_important!(warn, "工具 {} 需要先调用 zhi 确认", tool_name);
+                return Err(McpError::invalid_request(
+                    format!("⚠️ 操作需要确认：请先调用 zhi 工具向用户确认后再执行 {} 操作", tool_name),
+                    None
+                ));
+            }
+        }
+
         match request.name.as_ref() {
             "zhi" => {
                 // 解析请求参数
@@ -287,8 +322,17 @@ impl ServerHandler for ZhiServer {
                 let zhi_request: ZhiRequest = serde_json::from_value(arguments_value)
                     .map_err(|e| McpError::invalid_params(format!("参数解析失败: {}", e), None))?;
 
-                // 调用 iterate 工具
-                InteractionTool::zhi(zhi_request).await
+                // 调用 zhi 工具
+                let result = InteractionTool::zhi(zhi_request).await;
+                
+                // 成功调用后更新时间戳
+                if result.is_ok() {
+                    let mut last_call = get_zhi_last_call().lock();
+                    *last_call = Some(Instant::now());
+                    log_debug!("zhi 授权时间戳已更新");
+                }
+                
+                result
             }
             "ji" => {
                 // 检查记忆管理工具是否启用

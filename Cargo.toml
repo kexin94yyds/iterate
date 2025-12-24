@@ -66,6 +66,7 @@ chromiumoxide = { version = "0.7", features = ["tokio-runtime"], default-feature
 futures = "0.3"
 once_cell = "1.19"
 tokio-tungstenite = "0.21"
+parking_lot = "0.12"  # 高效的同步原语，用于 zhi 授权状态追踪
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
