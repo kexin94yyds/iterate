@@ -158,9 +158,20 @@ impl MemoryTool {
                 manager.add_session_summary(&request.content)
                     .map_err(|e| McpError::internal_error(format!("添加摘要失败: {}", e), None))?
             }
+            "" | "选择" => {
+                // 返回选项菜单，让 AI 调用 zhi 展示给用户
+                r#"📋 **请选择 ji 操作**
+
+请调用 `zhi` 工具展示以下选项：
+
+**a** = 沉淀 → 写入 `.cunzhi-knowledge/` (problems/patterns/regressions)
+**b** = 记忆 → 写入 `.cunzhi-memory/` (context/preference/rule)
+
+用户选择后，再调用 `ji(action=沉淀)` 或 `ji(action=记忆)`"#.to_string()
+            }
             _ => {
                 return Err(McpError::invalid_params(
-                    format!("未知的操作类型: {}", request.action),
+                    format!("未知的操作类型: {}。可选：回忆/记忆/沉淀/摘要，或留空显示选项", request.action),
                     None
                 ));
             }
