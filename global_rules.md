@@ -97,21 +97,44 @@
 
 <tools>
 
-### MCP 工具层级
+### 工具分层架构
+
+**第一层：IDE 内置工具（直接调用）**
+
+| 功能 | Cursor | Windsurf | 使用场景 |
+|------|--------|----------|----------|
+| 读取文件 | `read_file` | `Read` | 查看任意文件内容 |
+| 精确搜索 | `grep` | `Grep` | 按正则/关键词搜索 |
+| 文件查找 | `glob_file_search` | `Glob` | 按模式匹配文件名 |
+| 语义搜索 | `codebase_search` | - | 按含义搜索代码 |
+| 编辑文件 | `search_replace` | `Edit` / `MultiEdit` | 替换文件内容 |
+| 写入文件 | `write` | `Write` | 创建/覆盖文件 |
+| Shell 命令 | `run_terminal_cmd` | `Bash` | 执行 bash/zsh |
+| Shell 输出 | - | `BashOutput` | 获取后台命令输出 |
+| 终止命令 | - | `KillShell` | 终止后台 Shell |
+| 网络搜索 | `web_search` | `WebSearch` | 搜索外部信息 |
+| 网页获取 | - | `WebFetch` | 获取网页内容 |
+| 任务清单 | `todo_write` | `TodoWrite` | 管理 todo 列表 |
+| 列出目录 | `list_dir` | - | 查看目录结构 |
+| Notebook | `edit_notebook` | `NotebookEdit` | Jupyter 编辑 |
+| 子代理任务 | - | `Task` | 复杂多步任务 |
+| 退出规划 | - | `ExitPlanMode` | 退出规划模式 |
+
+**第二层：cunzhi MCP 工具（协调与增强）**
 
 **L0: zhi (寸止)** - 顶层协调者
 - 所有对话必经，控制任务流程
 - 显示消息、接收输入、确认/授权/反问/终止
 - ❌ 禁止仅输出文字 "zhi"，必须真正调用工具
-- ⚠️ **必须传递 `project_path` 参数**：当前项目的绝对路径，用于显示项目信息
+- ⚠️ **必须传递 `project_path` 参数**：当前项目的绝对路径
 
 **L1: 执行层工具**
 
 - **ji (记忆)**：回忆/记忆/沉淀/摘要
   - 必须绑定 git 根目录
-  - 沉淀流程：problems → patterns → regressions（自动完成三件套）
+  - 沉淀流程：problems → patterns → regressions
 
-- **sou (搜索)**：自动判断搜索类型
+- **sou (搜索)**：语义代码搜索（增强版 codebase_search）
   - 代码相关（函数名、变量、文件路径）→ `mcp0_sou` 或 `code_search`
   - 外部知识（API 文档、框架用法）→ `search_web`
 
@@ -121,8 +144,29 @@
 - **pai (派发)**：生成子代理提示词
   - 遵循：`prompts/workflows/batch-task.md` 工作流
 
-- **ci (提示词库)**：搜索 `prompts/<目录>/` 找相关模板并应用
+- **ci (提示词库)**：搜索 `prompts/<目录>/` 找相关模板
   - 触发：用户输入目录名（如 ci、git、testing）
+
+### 工具选择规则
+
+| 场景 | IDE 工具 | cunzhi 工具 | 说明 |
+|------|----------|-------------|------|
+| 读取代码文件 | `read_file` / `Read` | - | IDE 内置 |
+| 精确搜索字符串 | `grep` / `Grep` | - | 性能好 |
+| 按含义搜索代码 | `codebase_search` | `sou` | 语义理解 |
+| 编辑文件 | `search_replace` / `Edit` | - | IDE 内置 |
+| 执行 Shell 命令 | `run_terminal_cmd` / `Bash` | - | IDE 内置 |
+| 网络搜索 | `web_search` / `WebSearch` | - | IDE 内置 |
+| **危险操作前** | - | **`zhi` 确认** | 必须拦截 |
+| 记录到 knowledge | - | `ji(沉淀)` | cunzhi 专属 |
+| 查找历史问题 | - | `xi` | cunzhi 专属 |
+| 子代理任务 | `Task` | `pai` | 复杂多步 |
+
+**危险操作（必须先调用 `zhi`）**：
+- `rm -rf` / 批量删除
+- 重命名/移动多个文件（依赖数 ≥3）
+- 写入 `.cunzhi-knowledge/` 知识库
+- 执行未知来源的脚本
 </tools>
 
 <security>
