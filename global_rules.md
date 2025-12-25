@@ -1,6 +1,7 @@
 ; # `寸止` MCP 工具使用规则
 
 <!-- 详细规则见 .cunzhi-knowledge/rules/ -->
+<!-- 规则文件中的 [路径](链接) 格式支持 Cmd+点击 跳转，AI 应根据链接路径按需读取 -->
 
 <core_principles>
 
