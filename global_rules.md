@@ -1,7 +1,19 @@
 ; # `寸止` MCP 工具使用规则
 
-**详细规则见 [.cunzhi-knowledge/rules/](.cunzhi-knowledge/rules/)**
-**AI 指南**：规则文件中的 `[路径](链接)` 格式支持快速跳转，AI 必须根据链接路径按需读取相关详细规范。
+<rules_index>
+
+**YOU MUST 遵守以下详细规则文件（支持 Cmd+点击 跳转）：**
+
+- [01-core.md](.cunzhi-knowledge/rules/01-core.md) - 核心原则与对话控制
+- [02-tools.md](.cunzhi-knowledge/rules/02-tools.md) - MCP 工具说明
+- [03-workflows.md](.cunzhi-knowledge/rules/03-workflows.md) - Bug 修复与知识库流程
+- [04-security.md](.cunzhi-knowledge/rules/04-security.md) - 安全规则
+- [05-output-style.md](.cunzhi-knowledge/rules/05-output-style.md) - 输出风格与 zhi 调用规范
+- [06-skills.md](.cunzhi-knowledge/rules/06-skills.md) - Claude Skills 触发规则
+
+**AI 指南**：AI 必须根据上述链接路径按需读取相关详细规范。
+
+</rules_index>
 
 <core_principles>
 
