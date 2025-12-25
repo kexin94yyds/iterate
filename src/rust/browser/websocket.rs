@@ -35,9 +35,18 @@ pub async fn send_to_browser(message: String) -> Result<()> {
                 tab_id: None,
             };
             log::info!("发送消息通过 channel...");
-            if sender.send(msg).await.is_ok() {
-                log::info!("消息已发送到 channel");
-                return Ok(());
+            match sender.send(msg).await {
+                Ok(_) => {
+                    log::info!("消息已发送到 channel");
+                    return Ok(());
+                }
+                Err(e) => {
+                    log::warn!("Channel 发送失败: {}，连接可能已断开", e);
+                    // 清理失效的发送器
+                    drop(tx);
+                    let mut tx_write = BROWSER_TX.write().await;
+                    *tx_write = None;
+                }
             }
         }
     }
@@ -271,6 +280,13 @@ async fn handle_connection(
                 }
             }
         }
+    }
+
+    // 连接关闭时，如果是浏览器扩展连接，清理 BROWSER_TX
+    if is_browser_extension {
+        let mut tx = BROWSER_TX.write().await;
+        *tx = None;
+        log::info!("浏览器扩展连接关闭，已清理 BROWSER_TX");
     }
 }
 

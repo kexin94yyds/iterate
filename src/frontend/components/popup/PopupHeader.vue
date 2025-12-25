@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { invoke } from '@tauri-apps/api/core'
 import { computed } from 'vue'
 import ThemeIcon from '../common/ThemeIcon.vue'
 
@@ -33,6 +34,19 @@ const emit = defineEmits<Emits>()
 const displayProjectPath = computed(() => {
   return props.projectPath || null
 })
+
+// Cmd+点击项目路径，在 Cursor 中打开
+async function handleProjectPathClick(event: MouseEvent) {
+  if (event.metaKey && props.projectPath) {
+    event.preventDefault()
+    try {
+      await invoke('open_in_cursor', { projectPath: props.projectPath })
+    }
+    catch (error) {
+      console.error('打开 Cursor 失败:', error)
+    }
+  }
+}
 
 function handleThemeChange() {
   // 切换到下一个主题
@@ -72,7 +86,12 @@ function handleNewChat() {
         >
           {{ props.linkTitle || props.linkUrl }}
         </a>
-        <span v-else-if="displayProjectPath" class="text-sm text-gray-400 truncate" :title="displayProjectPath">
+        <span
+          v-else-if="displayProjectPath"
+          class="text-sm text-gray-400 truncate cursor-pointer hover:text-primary-400 transition-colors"
+          :title="`${displayProjectPath}\n(⌘+点击在 IDE 中打开)`"
+          @click="handleProjectPathClick"
+        >
           / {{ displayProjectPath }}
         </span>
       </div>

@@ -122,12 +122,20 @@ watch(() => props.appConfig.reply, (newReplyConfig) => {
 let telegramUnlisten: (() => void) | null = null
 
 // 监听请求变化
-watch(() => props.request, (newRequest) => {
+watch(() => props.request, async (newRequest) => {
   if (newRequest) {
     resetForm()
     loading.value = true
     // 每次显示弹窗时重新加载配置
     loadReplyConfig()
+
+    // 窗口居中到当前屏幕（从最小化/隐藏恢复时也会居中）
+    try {
+      await invoke('center_window')
+    }
+    catch (e) {
+      console.log('窗口居中失败:', e)
+    }
 
     // 自动检测来源并设置发送目标
     // 如果请求中有 browser_ai_response，说明是从 Web 来的

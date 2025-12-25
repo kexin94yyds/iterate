@@ -1049,3 +1049,122 @@ pub async fn open_terminal() -> Result<(), String> {
 
     Ok(())
 }
+
+/// 检测正在运行的 IDE（macOS）
+/// 使用 pgrep 检测进程，比 AppleScript 更稳定
+#[cfg(target_os = "macos")]
+fn detect_running_ide() -> Option<&'static str> {
+    use std::process::Command;
+
+    // 检测 Windsurf 是否在运行
+    let windsurf_running = Command::new("pgrep")
+        .args(["-x", "Windsurf"])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    // 检测 Cursor 是否在运行
+    let cursor_running = Command::new("pgrep")
+        .args(["-x", "Cursor"])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    // 如果只有一个在运行，返回那个
+    match (cursor_running, windsurf_running) {
+        (false, true) => Some("Windsurf"),
+        (true, false) => Some("Cursor"),
+        // 两个都在运行或都没运行，返回 None 使用默认顺序
+        _ => None,
+    }
+}
+
+/// 在 IDE（Cursor 或 Windsurf）中打开项目路径
+/// 智能检测：优先打开当前正在使用的 IDE
+#[tauri::command]
+pub async fn open_in_cursor(project_path: String) -> Result<(), String> {
+    use std::process::Command;
+
+    #[cfg(target_os = "macos")]
+    {
+        // 检测正在运行的 IDE，决定优先级
+        let active_ide = detect_running_ide();
+
+        let ides: Vec<(&str, &str)> = match active_ide {
+            Some("Windsurf") => vec![
+                ("windsurf", "Windsurf"),
+                ("cursor", "Cursor"),
+            ],
+            _ => vec![
+                ("cursor", "Cursor"),
+                ("windsurf", "Windsurf"),
+            ],
+        };
+
+        let mut opened = false;
+        for (cmd, app_name) in ides {
+            // 先尝试命令行工具
+            if Command::new(cmd).arg(&project_path).spawn().is_ok() {
+                opened = true;
+                break;
+            }
+            // 再尝试 open -a
+            if Command::new("open")
+                .args(["-a", app_name, &project_path])
+                .spawn()
+                .is_ok()
+            {
+                opened = true;
+                break;
+            }
+        }
+
+        if !opened {
+            return Err("无法找到 Cursor 或 Windsurf IDE".to_string());
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: 先尝试 cursor，再尝试 windsurf
+        let result = Command::new("cmd")
+            .args(["/C", "cursor", &project_path])
+            .spawn();
+
+        if result.is_err() {
+            Command::new("cmd")
+                .args(["/C", "windsurf", &project_path])
+                .spawn()
+                .map_err(|e| format!("打开 IDE 失败: {}", e))?;
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: 先尝试 cursor，再尝试 windsurf
+        let result = Command::new("cursor")
+            .arg(&project_path)
+            .spawn();
+
+        if result.is_err() {
+            Command::new("windsurf")
+                .arg(&project_path)
+                .spawn()
+                .map_err(|e| format!("打开 IDE 失败: {}", e))?;
+        }
+    }
+
+    Ok(())
+}
+
+/// 在当前活动工作区显示窗口（跟随当前页面）
+/// 配合 tauri.conf.json 中的 visibleOnAllWorkspaces: true，窗口会在所有工作区可见
+#[tauri::command]
+pub async fn center_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        // 显示并聚焦窗口
+        window.show().map_err(|e| format!("显示窗口失败: {}", e))?;
+        window.set_focus().map_err(|e| format!("聚焦窗口失败: {}", e))?;
+    }
+    Ok(())
+}

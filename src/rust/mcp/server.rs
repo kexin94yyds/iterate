@@ -121,7 +121,7 @@ impl ServerHandler for ZhiServer {
                 },
                 "project_path": {
                     "type": "string",
-                    "description": "当前项目的绝对路径（可选，用于显示项目信息）"
+                    "description": "当前项目的绝对路径（强烈建议传递，用于在弹窗中显示项目路径）"
                 }
             },
             "required": ["message"]

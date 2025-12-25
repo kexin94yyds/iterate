@@ -27,7 +27,8 @@
         "transparent": false,
         "skipTaskbar": false,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "visibleOnAllWorkspaces": true
       }
     ],
     "security": {
