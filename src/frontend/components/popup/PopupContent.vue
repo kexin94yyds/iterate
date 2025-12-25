@@ -86,6 +86,22 @@ function setSendTarget(target: 'ide' | 'browser') {
   emit('toggleSendTarget', target)
 }
 
+// 自动检测来源并设置发送目标
+// 如果请求中有 browser_ai_response，说明是从 Web 来的
+watch(() => props.request?.browser_ai_response, (hasBrowserResponse) => {
+  if (hasBrowserResponse) {
+    sendTarget.value = 'browser'
+    localStorage.setItem(SEND_TARGET_KEY, 'browser')
+    emit('toggleSendTarget', 'browser')
+  } else if (props.request) {
+    // 只有当 request 存在但没有 browser_ai_response 时，才设置为 IDE
+    // 避免在 request 为 null 时错误地设置为 IDE
+    sendTarget.value = 'ide'
+    localStorage.setItem(SEND_TARGET_KEY, 'ide')
+    emit('toggleSendTarget', 'ide')
+  }
+}, { immediate: true })
+
 // 初始化时通知父组件当前状态
 onMounted(() => {
   if (savedTarget) {

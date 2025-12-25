@@ -14,6 +14,8 @@ function connectWebSocket() {
     ws.onopen = () => {
       console.log('[Iterate] WebSocket 已连接')
       clearReconnectTimer()
+      // 立即发送一次心跳，让服务器知道这是浏览器扩展连接
+      ws.send(JSON.stringify({ type: 'ping' }))
       startHeartbeat()
     }
 

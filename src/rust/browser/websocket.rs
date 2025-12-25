@@ -181,16 +181,22 @@ async fn handle_connection(
                         if let Ok(data) = serde_json::from_str::<serde_json::Value>(&text) {
                             let msg_type = data.get("type").and_then(|t| t.as_str()).unwrap_or("");
                             
+                            // 任何来自浏览器扩展的消息（包括 ping、ai_completed 等）都应该更新 BROWSER_TX
+                            // 这样确保 channel 始终指向最新的活跃连接
+                            // 注意：每次收到 ping 都更新，确保重连后能正确刷新 sender
+                            if msg_type == "ai_completed" || msg_type == "ping" {
+                                if !is_browser_extension {
+                                    is_browser_extension = true;
+                                    log::info!("确认为浏览器扩展连接（消息类型: {}），更新 BROWSER_TX", msg_type);
+                                }
+                                // 每次心跳都刷新 sender，确保指向当前活跃连接
+                                let mut tx = BROWSER_TX.write().await;
+                                *tx = Some(browser_tx.clone());
+                            }
+                            
                             match msg_type {
                                 "ai_completed" => {
                                     // 浏览器扩展发来的 AI 完成事件
-                                    // 确认这是浏览器扩展连接，更新 BROWSER_TX
-                                    if !is_browser_extension {
-                                        is_browser_extension = true;
-                                        log::info!("确认为浏览器扩展连接，更新 BROWSER_TX");
-                                        let mut tx = BROWSER_TX.write().await;
-                                        *tx = Some(browser_tx.clone());
-                                    }
                                     
                                     // 获取 AI 回复内容
                                     log::info!("收到的完整数据: {:?}", data);
@@ -235,7 +241,8 @@ async fn handle_connection(
                                     }
                                 }
                                 "ping" => {
-                                    // 心跳消息，忽略
+                                    // 心跳消息，记录活跃状态（BROWSER_TX 已在上面更新）
+                                    log::debug!("收到浏览器扩展心跳");
                                 }
                                 _ => {
                                     log::debug!("未知消息类型: {}", msg_type);
