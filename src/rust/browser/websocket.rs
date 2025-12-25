@@ -37,8 +37,8 @@ pub async fn send_to_browser(message: String) -> Result<()> {
             log::info!("发送消息通过 channel...");
             match sender.send(msg).await {
                 Ok(_) => {
-                    log::info!("消息已发送到 channel");
-                    return Ok(());
+                log::info!("消息已发送到 channel");
+                return Ok(());
                 }
                 Err(e) => {
                     log::warn!("Channel 发送失败: {}，连接可能已断开", e);
