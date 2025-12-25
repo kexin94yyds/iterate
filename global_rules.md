@@ -34,7 +34,7 @@
 
 | 触发 | 动作 | 具体行为 |
 |------|------|----------|
-| 对话开始 | `ji(回忆)` | 检查 `.cunzhi-knowledge/` 存在 + git status，有更新则询问 pull |
+| 对话开始 | `ji(回忆)` | 检查 `.cunzhi-knowledge/` 存在？不存在则询问 clone：`git clone https://github.com/kexin94yyds/cunzhi-knowledge.git .cunzhi-knowledge`；存在则 git fetch + status 检查更新 |
 | "请记住" | `ji(记忆)` | 写入 `.cunzhi-memory/` 对应分类（context/preferences/rules） |
 | "ji" | `zhi` → `ji` | 先弹窗让用户选择：a=沉淀(knowledge) / b=记忆(memory) |
 | "sou" | `mcp0_sou` / `search_web` | 自动判断：代码相关→语义搜索；外部知识→网络搜索 |
@@ -48,7 +48,9 @@
 
 ### Memory vs Knowledge
 - `.cunzhi-memory/` = 项目级临时（context/preferences/notes）
-- `.cunzhi-knowledge/` = 全局持久化（problems/patterns/regressions）
+- `.cunzhi-knowledge/` = 全局持久化知识库（独立仓库）
+  - **仓库地址**：`git clone https://github.com/kexin94yyds/cunzhi-knowledge.git .cunzhi-knowledge`
+  - 内容：problems/patterns/regressions/prompts/rules
 
 ### 何时写入 Memory
 - 用户说"请记住" → 写入 `.cunzhi-memory/` 对应文件
