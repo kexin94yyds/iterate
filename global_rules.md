@@ -1,6 +1,6 @@
 ; # `寸止` MCP 工具使用规则
 
-<!-- 详细规则见 .cunzhi-knowledge/prompts/rules/ -->
+<!-- 详细规则见 .cunzhi-knowledge/rules/ -->
 
 <core_principles>
 
@@ -90,7 +90,7 @@
 
 ### 工具分层架构
 
-**第一层：IDE 内置工具** - 读取/搜索/编辑/Shell/网络（详见 `prompts/rules/tools.md`）
+**第一层：IDE 内置工具** - 读取/搜索/编辑/Shell/网络（详见 `rules/02-tools.md`）
 
 **第二层：cunzhi MCP 工具（协调与增强）**
 
@@ -138,7 +138,7 @@
 
 - **位置**：`.cunzhi-knowledge/prompts/skills/`
 - **触发**：识别专业任务意图时，读取对应 `SKILL.md`
-- **详细映射**：见 `prompts/rules/skills.md`
+- **详细映射**：见 `rules/06-skills.md`
 </tools>
 
 <security>
